@@ -81,11 +81,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     <div className="space-y-8 max-w-7xl mx-auto pb-16 font-sans text-slate-900">
       
       {/* Admin Title Header */}
-      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-emerald-100 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center space-x-2">
-            <Scale className="h-6 w-6 text-amber-600" />
-            <h2 className="text-2xl font-black text-slate-900">{t('adminView')}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <Scale className="h-6 w-6 text-amber-600 shrink-0" />
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900">{t('adminView')}</h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold border border-amber-200">
               WUA & Water Officer Portal
             </span>
@@ -95,12 +95,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
           <button
             onClick={onTriggerReallocation}
-            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs shadow-sm transition flex items-center space-x-2"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs shadow-sm transition flex items-center justify-center space-x-2"
           >
-            <Activity className="h-4 w-4 text-emerald-600" />
+            <Activity className="h-4 w-4 text-emerald-600 shrink-0" />
             <span>Re-Run Solver</span>
           </button>
 
@@ -108,13 +108,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               onClick={() => onAcceptAllocation(allocation.version)}
               disabled={isAccepted}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center space-x-1.5 ${
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5 ${
                 isAccepted
                   ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white'
               }`}
             >
-              <ShieldCheck className="h-4 w-4" />
+              <ShieldCheck className="h-4 w-4 shrink-0" />
               <span>{isAccepted ? 'Allocation Accepted & Locked ✅' : `Accept & Lock Allocation (v${allocation.version})`}</span>
             </button>
           )}
@@ -273,7 +273,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-800">
+          <table className="w-full min-w-[700px] text-left text-xs text-slate-800">
             <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
               <tr>
                 <th className="p-4">Farmer</th>
