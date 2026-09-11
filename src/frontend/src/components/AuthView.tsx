@@ -173,7 +173,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         className="hidden xl:flex flex-col gap-5 absolute left-12 top-1/2 -translate-y-1/2 max-w-xs z-10 pointer-events-none transition-transform duration-700 ease-out"
         style={{ transform: `translateY(-50%) translate3d(${cardTilt.y * -1.5}px, ${cardTilt.x * -1.5}px, 0)` }}
       >
-        <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
+        {/* <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
           <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
             <Waves className="w-4 h-4 text-emerald-600 animate-pulse" />
             <span>3D Canal Flow Simulation</span>
@@ -185,9 +185,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
             <span className="bg-emerald-100/80 px-2 py-0.5 rounded-full">Flow: 450 L/min</span>
             <span className="bg-blue-100/80 text-blue-800 px-2 py-0.5 rounded-full">Floor: 60%</span>
           </div>
-        </div>
+        </div> */}
 
-        <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
+        {/* <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
           <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
             <Sprout className="w-4 h-4 text-emerald-600" />
             <span>Dynamic Crop Urgency</span>
@@ -195,14 +195,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
           <p className="text-[11px] text-slate-600 leading-relaxed">
             Prioritizes water at flowering & bulb development stages to safeguard farmer yields.
           </p>
-        </div>
+        </div> */}
       </div>
 
       <div
         className="hidden xl:flex flex-col gap-5 absolute right-12 top-1/2 -translate-y-1/2 max-w-xs z-10 pointer-events-none transition-transform duration-700 ease-out"
         style={{ transform: `translateY(-50%) translate3d(${cardTilt.y * 1.5}px, ${cardTilt.x * 1.5}px, 0)` }}
       >
-        <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
+        {/* <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
           <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
             <Scale className="w-4 h-4 text-amber-600" />
             <span>AI Dispute Mediation</span>
@@ -223,7 +223,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
           <p className="text-[11px] text-slate-600 leading-relaxed">
             1 water request per 3 days rule enforced transparently across all village accounts.
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* Main Glassmorphic 3D Card with Tilt */}
@@ -252,8 +252,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
             type="button"
             onClick={() => { setActiveTab('login'); setErrorMsg(null); }}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'login'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             {t('signIn')}
@@ -262,8 +262,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
             type="button"
             onClick={() => { setActiveTab('register'); setErrorMsg(null); }}
             className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'register'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
               }`}
           >
             {t('register')}
