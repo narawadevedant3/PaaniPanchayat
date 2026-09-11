@@ -75,6 +75,7 @@ export const translations = {
     tagline: "Fair Water. Peaceful Farming.",
     farmerView: "Farmer Portal",
     adminView: "Panchayat Admin",
+    admin: "Panchayat Admin",
     demoReset: "Reset Demo",
     installApp: "Install App",
     language: "Language",
@@ -171,6 +172,7 @@ export const translations = {
     waterHelpline: "Water Helpline",
     helplineDesc: "Dispute Officers available 24/7 during canal rotation cycles.",
     irrigationDesk: "Irrigation Officer Desk",
+    panchayatOffice: "Gram Panchayat Office, Canal Zone #1",
     platformOverview: "AI-Powered Water Sharing & Dispute Mediation Platform for Indian Farmers. Optimizing canal allocations with Google OR-Tools to eliminate water disputes.",
 
     // Auth & Account
@@ -220,6 +222,7 @@ export const translations = {
     tagline: "न्यायपूर्ण पानी। समृद्ध खेती।",
     farmerView: "किसान पोर्टल",
     adminView: "पंचायत व्यवस्थापक",
+    admin: "पंचायत प्रशासक",
     demoReset: "डेमो रीसेट",
     installApp: "ऐप इंस्टॉल करें",
     language: "भाषा",
@@ -316,6 +319,7 @@ export const translations = {
     waterHelpline: "जल हेल्पलाइन",
     helplineDesc: "नहर चक्र के दौरान अधिकारी 24/7 सहायता के लिए उपलब्ध हैं।",
     irrigationDesk: "सिंचाई अधिकारी डेस्क",
+    panchayatOffice: "ग्राम पंचायत कार्यालय, नहर ज़ोन #1",
     platformOverview: "भारतीय किसानों के लिए एआई-संचालित जल साझाकरण और विवाद समाधान मंच। Google OR-Tools द्वारा नहर जल का निष्पक्ष वितरण।",
 
     // Auth & Account
@@ -365,6 +369,7 @@ export const translations = {
     tagline: "न्याय्य पाणी. समृद्ध शेती.",
     farmerView: "शेतकरी पोर्टल",
     adminView: "पंचायत प्रशासक",
+    admin: "पंचायत प्रशासक",
     demoReset: "डेमो रीसेट",
     installApp: "ॲप इन्स्टॉल करा",
     language: "भाषा",
@@ -461,6 +466,7 @@ export const translations = {
     waterHelpline: "पाणी हेल्पलाइन",
     helplineDesc: "पाटाच्या पाळीदरम्यान अधिकारी २४/७ मदतीसाठी उपलब्ध आहेत.",
     irrigationDesk: "सिंचन अधिकारी कार्यालय",
+    panchayatOffice: "ग्रामपंचायत कार्यालय, कालवा विभाग क्र. १",
     platformOverview: "भारतीय शेतकऱ्यांसाठी एआई-आधारित पाणी वाटप व विवाद निवारण व्यासपीठ. Google OR-Tools द्वारे कालव्याच्या पाण्याचे न्याय्य वाटप.",
 
     // Auth & Account
