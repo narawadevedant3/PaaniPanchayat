@@ -8,7 +8,7 @@ import { MediationChat } from '../src/components/MediationChat';
 import { WhyExplanationModal } from '../src/components/WhyExplanationModal';
 import { FarmRegistrationModal } from '../src/components/FarmRegistrationModal';
 import { AuthView } from '../src/components/AuthView';
-import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse, AuthUser } from '../src/types';
+import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse, AuthUser, FarmFormData, RequirementBreakdown } from '../src/types';
 
 const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
 
@@ -100,38 +100,94 @@ const INITIAL_DEMO_ALLOCATION: AllocationResult = {
 };
 
 export default function Home() {
-  const [role, setRole] = useState<UserRole>('farmer');
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [role, setRole] = useState<UserRole>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedUser = localStorage.getItem('paani_user');
+        if (savedUser) {
+          const parsed = JSON.parse(savedUser);
+          if (parsed.role === 'admin' || parsed.role === 'farmer') return parsed.role;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return 'farmer';
+  });
+
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedUser = localStorage.getItem('paani_user');
+        if (savedUser) return JSON.parse(savedUser) as AuthUser;
+      } catch {
+        // ignore
+      }
+    }
+    return null;
+  });
+
+  // Hydration guard: localStorage restore (auth session) differs from the SSR HTML,
+  // so render a neutral shell until the client has mounted.
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+
   const [allocation, setAllocation] = useState<AllocationResult | null>(INITIAL_DEMO_ALLOCATION);
   const [farms, setFarms] = useState<Farm[]>([]);
-  const [selectedFarmId, setSelectedFarmId] = useState<number>(1);
+  const [selectedFarmIdState, setSelectedFarmIdState] = useState<number | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAccepted, setIsAccepted] = useState<boolean>(false);
 
   // Modals
   const [whyItem, setWhyItem] = useState<AllocationItem | null>(null);
+  const [whyBreakdown, setWhyBreakdown] = useState<RequirementBreakdown | null>(null);
   const [objectionItem, setObjectionItem] = useState<AllocationItem | null>(null);
   const [showAddFarmModal, setShowAddFarmModal] = useState<boolean>(false);
 
-  // Check saved authentication session
-  useEffect(() => {
-    const savedUser = localStorage.getItem('paani_user');
-    if (savedUser) {
-      try {
-        const parsed: AuthUser = JSON.parse(savedUser);
-        setAuthUser(parsed);
-        setRole(parsed.role);
-      } catch (e) {
-        localStorage.removeItem('paani_user');
-      }
+  // Authenticated fetch helper (token as query param, matching backend API)
+  const authUrl = (path: string) => {
+    if (!authUser?.token) return `${API_BASE}${path}`;
+    return `${API_BASE}${path}${path.includes('?') ? '&' : '?'}token=${encodeURIComponent(authUser.token)}`;
+  };
+
+  // DATA ISOLATION: farmers only see allocations for THEIR OWN farms;
+  // canal-level totals (demand/supply) remain shared context.
+  const visibleAllocation = React.useMemo<AllocationResult | null>(() => {
+    if (!allocation) return null;
+    if (role === 'admin') return allocation;
+    const myFarmIds = new Set(farms.map(f => f.id));
+    if (myFarmIds.size === 0) return allocation; // fallback demo mode before farms load
+    const mine = allocation.allocations.filter(a => myFarmIds.has(a.farm_id));
+    if (mine.length === 0) return allocation;
+    return { ...allocation, allocations: mine };
+  }, [allocation, farms, role]);
+
+  // Automatically derive active selectedFarmId: manual selection -> matching logged-in user farm -> first farm
+  const selectedFarmId = React.useMemo(() => {
+    if (selectedFarmIdState !== null) return selectedFarmIdState;
+    if (authUser && allocation && allocation.allocations.length > 0) {
+      const userFirstName = authUser.name.split(' ')[0].toLowerCase();
+      const matched = allocation.allocations.find(a => 
+        a.farmer_name.toLowerCase().includes(userFirstName) ||
+        a.farm_id === authUser.user_id
+      );
+      if (matched) return matched.farm_id;
+      return allocation.allocations[0].farm_id;
     }
-  }, []);
+    return 1;
+  }, [selectedFarmIdState, authUser, allocation]);
+
+  const setSelectedFarmId = (id: number) => {
+    setSelectedFarmIdState(id);
+  };
 
   const handleLoginSuccess = (user: AuthUser) => {
     setAuthUser(user);
     setRole(user.role);
     localStorage.setItem('paani_user', JSON.stringify(user));
+    // Re-fetch immediately with the new token so farmers ONLY see their own farms
+    refreshBackendData(user.token);
   };
 
   const handleLogout = () => {
@@ -139,36 +195,26 @@ export default function Home() {
     localStorage.removeItem('paani_user');
   };
 
-  // Automatically bind selectedFarmId to logged in user's farm
-  useEffect(() => {
-    if (authUser && allocation && allocation.allocations.length > 0) {
-      const userFirstName = authUser.name.split(' ')[0].toLowerCase();
-      const matched = allocation.allocations.find(a => 
-        a.farmer_name.toLowerCase().includes(userFirstName) ||
-        a.farm_id === authUser.user_id
-      );
-      if (matched) {
-        setSelectedFarmId(matched.farm_id);
-      } else {
-        setSelectedFarmId(allocation.allocations[0].farm_id);
-      }
-    }
-  }, [authUser, allocation]);
-
-  // Fetch initial backend state if online
-  const refreshBackendData = async () => {
+  // Fetch initial backend state if online. Pass a token to scope farms to the logged-in user.
+  const refreshBackendData = async (token?: string) => {
     setIsLoading(true);
     try {
-      const farmsRes = await fetch(`${API_BASE}/farms`);
+      // Token-scoped: farmers get ONLY their own farms back
+      const farmsUrl = token || authUser?.token
+        ? `${API_BASE}/farms?token=${encodeURIComponent(token || authUser!.token!)}`
+        : `${API_BASE}/farms`;
+      const farmsRes = await fetch(farmsUrl);
       if (farmsRes.ok) {
         const data = await farmsRes.json();
         setFarms(data);
       }
 
-      const allocRes = await fetch(`${API_BASE}/allocation/generate`, { method: 'POST' });
+      // Use /allocation/current so active mediation/version state is preserved
+      const allocRes = await fetch(`${API_BASE}/allocation/current`);
       if (allocRes.ok) {
         const allocData = await allocRes.json();
         setAllocation(allocData);
+        setIsAccepted(!!allocData.is_accepted);
       }
 
       const auditRes = await fetch(`${API_BASE}/audit`);
@@ -176,21 +222,58 @@ export default function Home() {
         const auditData = await auditRes.json();
         setAuditLogs(auditData);
       }
-    } catch (e) {
-      console.log("Backend offline or loading local fallback preset:", e);
+    } catch {
+      console.log("Backend offline or loading local fallback preset");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    refreshBackendData();
+    // On mount: restore session -> re-fetch farms scoped to the restored token
+    let isMounted = true;
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('paani_user') : null;
+    const savedToken = saved ? (() => { try { return JSON.parse(saved).token as string; } catch { return undefined; } })() : undefined;
+    const loadInitialData = async () => {
+      try {
+        const [farmsRes, allocRes, auditRes] = await Promise.allSettled([
+          fetch(savedToken ? `${API_BASE}/farms?token=${encodeURIComponent(savedToken)}` : `${API_BASE}/farms`),
+          fetch(`${API_BASE}/allocation/current`),
+          fetch(`${API_BASE}/audit`)
+        ]);
+        // NOTE: initial load is unauthenticated on purpose (page can render before
+        // token restore); refreshBackendData() re-fetches with the token right after login.
+
+        if (isMounted && farmsRes.status === 'fulfilled' && farmsRes.value.ok) {
+          const data = await farmsRes.value.json();
+          setFarms(data);
+        }
+        if (isMounted && allocRes.status === 'fulfilled' && allocRes.value.ok) {
+          const allocData = await allocRes.value.json();
+          setAllocation(allocData);
+          setIsAccepted(!!allocData.is_accepted);
+        }
+        if (isMounted && auditRes.status === 'fulfilled' && auditRes.value.ok) {
+          const auditData = await auditRes.value.json();
+          setAuditLogs(auditData);
+        }
+      } catch {
+        // use fallback initial demo allocation
+      }
+    };
+
+    loadInitialData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Demo Scenario Reset
   const handleResetDemo = async () => {
     setIsLoading(true);
     setIsAccepted(false);
+    setSelectedFarmIdState(null);
     try {
       const res = await fetch(`${API_BASE}/demo/reset`, { method: 'POST' });
       if (res.ok) {
@@ -200,10 +283,80 @@ export default function Home() {
         }
       }
       await refreshBackendData();
-    } catch (e) {
+    } catch {
       setAllocation(INITIAL_DEMO_ALLOCATION);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // NEW WATER CYCLE: fresh water arrives -> previous distribution resets ->
+  // re-allocation by current crop stage & emergency priority
+  const handleNewWaterCycle = async (volumeLiters?: number) => {
+    setIsLoading(true);
+    setIsAccepted(false);
+    setSelectedFarmIdState(null);
+    try {
+      const res = await fetch(`${API_BASE}/water-cycle/new-water`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_volume_liters: volumeLiters ?? 180000 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAllocation(data.allocation);
+        setIsAccepted(!!data.allocation?.is_accepted);
+      }
+      await refreshBackendData();
+    } catch {
+      console.log('Water cycle failed; keeping current state');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reset distribution without new water (archive current allocations)
+  const handleResetDistribution = async () => {
+    setIsLoading(true);
+    setIsAccepted(false);
+    try {
+      const res = await fetch(`${API_BASE}/water-cycle/reset-distribution`, { method: 'POST' });
+      if (res.ok) {
+        await refreshBackendData();
+      }
+    } catch {
+      console.log('Failed to reset distribution');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch the transparent requirement breakdown for the Why modal
+  const handleOpenWhyModal = async (item: AllocationItem) => {
+    setWhyItem(item);
+    setWhyBreakdown(null);
+    const farm = farms.find(f => f.id === item.farm_id);
+    if (!farm) return;
+    try {
+      const res = await fetch(`${API_BASE}/water-requirement/calculate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farm_id: farm.id,
+          crop_name: item.crop_name,
+          area_acres: item.area_acres,
+          growth_stage: item.growth_stage,
+          soil_type: farm.soil_type,
+          irrigation_efficiency: farm.irrigation_efficiency,
+          previous_irrigation_liters: 0
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWhyBreakdown(data.breakdown ?? null);
+      }
+    } catch {
+      // modal still shows allocation reasoning as fallback
     }
   };
 
@@ -225,6 +378,8 @@ export default function Home() {
       if (res.ok) {
         const proposal: MediationProposalResponse = await res.json();
         setAllocation(proposal.revised_allocation);
+        setIsAccepted(false); // new version needs fresh acceptance
+        await refreshBackendData();
         return proposal;
       }
     } catch (e) {
@@ -276,25 +431,24 @@ export default function Home() {
     return null;
   };
 
-  // Accept Allocation
+  // Accept Allocation (persisted server-side so it survives reloads)
   const handleAcceptAllocation = async (version: number) => {
     setIsAccepted(true);
     try {
-      await fetch(`${API_BASE}/agreements/accept?version=${version}`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/agreements/accept?version=${version}`, { method: 'POST' });
+      if (!res.ok) setIsAccepted(false);
       await refreshBackendData();
-    } catch (e) {
-      console.log(e);
+    } catch {
+      console.log('Failed to register accepted agreement');
+      setIsAccepted(false);
     }
   };
 
-  // Add New Farm
-  const handleAddFarm = async (farmData: any) => {
+  // Add New Farm (token in URL so the farm attaches to the logged-in farmer)
+  const handleAddFarm = async (farmData: FarmFormData) => {
     try {
-      const payload = {
-        ...farmData,
-        user_id: authUser?.user_id || undefined
-      };
-      const res = await fetch(`${API_BASE}/farms`, {
+      const payload = { ...farmData };
+      const res = await fetch(authUrl('/farms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -306,10 +460,21 @@ export default function Home() {
           setSelectedFarmId(newFarm.id);
         }
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      console.error("Failed to register farm");
     }
   };
+
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#f2f6f4] p-4 sm:p-6">
+        <div className="text-center space-y-3">
+          <div className="h-12 w-12 rounded-2xl bg-emerald-600 mx-auto animate-pulse" />
+          <p className="text-sm font-bold text-emerald-900">PaaniPanchayat</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!authUser) {
     return <AuthView apiBase={API_BASE} onLoginSuccess={handleLoginSuccess} />;
@@ -332,11 +497,11 @@ export default function Home() {
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         {role === 'farmer' ? (
           <FarmerDashboard
-            allocation={allocation}
+            allocation={visibleAllocation}
             farms={farms}
             selectedFarmId={selectedFarmId}
             setSelectedFarmId={setSelectedFarmId}
-            onOpenWhyModal={(item) => setWhyItem(item)}
+            onOpenWhyModal={handleOpenWhyModal}
             onOpenObjectionModal={(item) => setObjectionItem(item)}
             onAcceptAllocation={handleAcceptAllocation}
             onOpenAddFarmModal={() => setShowAddFarmModal(true)}
@@ -347,6 +512,9 @@ export default function Home() {
             allocation={allocation}
             auditLogs={auditLogs}
             onTriggerReallocation={refreshBackendData}
+            onReleaseWater={handleNewWaterCycle}
+            onResetDistribution={handleResetDistribution}
+            isLoading={isLoading}
           />
         )}
       </main>
@@ -355,7 +523,8 @@ export default function Home() {
       {whyItem && (
         <WhyExplanationModal
           item={whyItem}
-          onClose={() => setWhyItem(null)}
+          breakdown={whyBreakdown}
+          onClose={() => { setWhyItem(null); setWhyBreakdown(null); }}
         />
       )}
 
@@ -364,6 +533,7 @@ export default function Home() {
           initialObjectingItem={objectionItem}
           onSubmitObjection={handleSubmitObjection}
           onAcceptProposal={() => handleAcceptAllocation(allocation?.version || 1)}
+          allocation={allocation}
           onClose={() => setObjectionItem(null)}
         />
       )}

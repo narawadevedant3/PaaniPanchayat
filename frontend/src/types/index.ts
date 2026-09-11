@@ -51,6 +51,12 @@ export interface RequirementBreakdown {
   explanation: string[];
 }
 
+export interface WaterRequirementResponse {
+  farm_id?: number;
+  estimated_volume_liters: number;
+  breakdown: RequirementBreakdown;
+}
+
 export interface AllocationItem {
   farm_id: number;
   farmer_name: string;
@@ -77,6 +83,15 @@ export interface AllocationResult {
   allocations: AllocationItem[];
   overall_fairness_score: number;
   optimization_status: string;
+  cycle_number?: number;
+  is_accepted?: boolean;
+}
+
+export interface WaterCycleResponse {
+  cycle_number: number;
+  message: string;
+  available_volume_liters: number;
+  allocation: AllocationResult;
 }
 
 export interface MediationProposalResponse {
@@ -95,8 +110,20 @@ export interface AuditLogItem {
   entity_type: string;
   entity_id: string;
   action: string;
-  details: any;
+  details: Record<string, unknown> | string | number | boolean | null;
   timestamp: string;
+}
+
+export interface FarmFormData {
+  farmer_name: string;
+  crop_name: string;
+  area_acres: number;
+  growth_stage: string;
+  soil_type: string;
+  irrigation_efficiency: number;
+  previous_irrigation_liters: number;
+  is_critical_stage: boolean;
+  emergency_priority?: boolean;
 }
 
 export interface WeatherData {

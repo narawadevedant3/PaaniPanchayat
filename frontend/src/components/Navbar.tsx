@@ -3,7 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { AuthUser, UserRole, Language } from '../types';
-import { Droplets, ShieldCheck, RefreshCw, Download, Globe, User, Settings, Scale, LogOut } from 'lucide-react';
+import { Droplets, RefreshCw, Download, Globe, User, Scale, LogOut } from 'lucide-react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 interface NavbarProps {
   currentRole: UserRole;
@@ -16,13 +21,13 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDemo, isLoading, authUser, onLogout }) => {
   const { language, setLanguage, t } = useLanguage();
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
     };
 
@@ -72,20 +77,35 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
         {/* Action Controls */}
         <div className="flex items-center space-x-2 sm:space-x-3">
 
-          {/* Active Role Badge */}
-          <div className="flex items-center px-3 py-1 bg-emerald-50 rounded-lg border border-emerald-200 text-xs font-semibold">
+          {/* Demo Scenario Reset Button */}
+          <button
+            onClick={onResetDemo}
+            disabled={isLoading}
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold shadow-sm transition disabled:opacity-50"
+            title="Reset to 4-Farm Demo Scenario (180,000 L)"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 text-amber-600 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="hidden md:inline">Reset Demo</span>
+          </button>
+
+          {/* Active Role Switcher Toggle */}
+          <button
+            onClick={() => setRole(currentRole === 'farmer' ? 'admin' : 'farmer')}
+            className="flex items-center px-3 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 text-xs font-semibold transition cursor-pointer"
+            title="Click to toggle Farmer / Admin view"
+          >
             {currentRole === 'admin' ? (
               <span className="flex items-center space-x-1 text-amber-700">
                 <Scale className="h-3.5 w-3.5 text-amber-600" />
-                <span>Panchayat Admin</span>
+                <span>Admin View</span>
               </span>
             ) : (
               <span className="flex items-center space-x-1 text-emerald-800">
                 <User className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Farmer Portal</span>
+                <span>Farmer View</span>
               </span>
             )}
-          </div>
+          </button>
 
           {/* Language Switcher */}
           <div className="relative flex items-center bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 text-xs">
@@ -104,7 +124,9 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
           {/* PWA Install App Button */}
           <button
             onClick={handleInstallApp}
-            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium shadow-sm transition"
+            className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium shadow-sm transition ${
+              isInstallable ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white'
+            }`}
             title="Install PWA to Home Screen"
           >
             <Download className="h-3.5 w-3.5" />

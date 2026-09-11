@@ -1,15 +1,9 @@
-import sys
-import os
-# Ensure the backend directory is in sys.path so 'app' imports work from any working directory
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import router, reset_demo_data
 from app.database import SessionLocal, Base, engine
-from app import models
-from contextlib import asynccontextmanager
 
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
@@ -18,13 +12,9 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
-        user_count = db.query(models.User).count()
-        farm_count = db.query(models.Farm).count()
-        if user_count == 0 or farm_count == 0:
-            reset_demo_data(db)
-            print("[SUCCESS] PaaniPanchayat Backend Initialized and Seeded with 4 Demo Farms!")
-        else:
-            print(f"[SUCCESS] PaaniPanchayat Backend Initialized with {user_count} users and {farm_count} farms from database.")
+        # Seed demo data on initial startup
+        reset_demo_data(db)
+        print("[SUCCESS] PaaniPanchayat Backend Initialized with 4 Demo Farms!")
     finally:
         db.close()
     yield

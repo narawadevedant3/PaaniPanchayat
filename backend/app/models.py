@@ -3,6 +3,9 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Tex
 from sqlalchemy.orm import relationship
 from app.database import Base
 
+def utcnow():
+    return datetime.datetime.now(datetime.timezone.utc)
+
 class User(Base):
     __tablename__ = "users"
 
@@ -54,7 +57,7 @@ class IrrigationHistory(Base):
     id = Column(Integer, primary_key=True, index=True)
     farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
     amount_liters = Column(Float, nullable=False)
-    date = Column(DateTime, default=datetime.datetime.utcnow)
+    date = Column(DateTime, default=utcnow)
 
 class WeatherRecord(Base):
     __tablename__ = "weather_records"
@@ -65,7 +68,7 @@ class WeatherRecord(Base):
     rainfall_mm = Column(Float, default=0.0)
     forecast_rainfall_mm = Column(Float, default=2.0)
     condition = Column(String, default="Warm & Dry")
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp = Column(DateTime, default=utcnow)
 
 class WaterSource(Base):
     __tablename__ = "water_sources"
@@ -74,7 +77,7 @@ class WaterSource(Base):
     name = Column(String, default="Panchayat Shared Canal #1")
     total_capacity_liters = Column(Float, default=300000.0)
     available_volume_liters = Column(Float, default=180000.0)
-    date = Column(DateTime, default=datetime.datetime.utcnow)
+    date = Column(DateTime, default=utcnow)
     status = Column(String, default="Scarce") # Normal, Scarce, Emergency
 
     allocations = relationship("Allocation", back_populates="water_source")
@@ -86,7 +89,7 @@ class WaterRequirement(Base):
     farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
     estimated_volume_liters = Column(Float, nullable=False)
     breakdown = Column(JSON, nullable=True) # store factors
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     farm = relationship("Farm", back_populates="requirements")
 
@@ -115,7 +118,7 @@ class Dispute(Base):
     objection_text = Column(Text, nullable=False)
     requested_additional_liters = Column(Float, default=8000.0)
     status = Column(String, default="Open") # Open, Mediating, Resolved, Rejected
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     farm = relationship("Farm", back_populates="disputes")
     mediation_sessions = relationship("MediationSession", back_populates="dispute")
@@ -128,7 +131,7 @@ class MediationSession(Base):
     proposal_text = Column(Text, nullable=False)
     proposal_json = Column(JSON, nullable=True)
     result_status = Column(String, default="Pending") # Pending, Validated, Accepted, Rejected
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     dispute = relationship("Dispute", back_populates="mediation_sessions")
 
@@ -138,7 +141,7 @@ class Agreement(Base):
     id = Column(Integer, primary_key=True, index=True)
     allocation_version = Column(Integer, default=1)
     status = Column(String, default="Accepted") # Pending, Accepted
-    accepted_at = Column(DateTime, default=datetime.datetime.utcnow)
+    accepted_at = Column(DateTime, default=utcnow)
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"
@@ -148,4 +151,4 @@ class AuditLog(Base):
     entity_id = Column(String, nullable=False)
     action = Column(String, nullable=False)
     details = Column(JSON, nullable=True)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    timestamp = Column(DateTime, default=utcnow)

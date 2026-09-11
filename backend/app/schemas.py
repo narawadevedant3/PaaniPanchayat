@@ -127,6 +127,14 @@ class AllocationResult(BaseModel):
     allocations: List[AllocationItem]
     overall_fairness_score: float
     optimization_status: str
+    cycle_number: int = 1
+    is_accepted: bool = False
+
+
+class WaterCycleRequest(BaseModel):
+    """Request to simulate a new water release into the shared canal."""
+    new_volume_liters: float = 180000.0
+    source_name: Optional[str] = None
 
 # Dispute & Mediation Schemas
 class ObjectionRequest(BaseModel):
@@ -135,6 +143,13 @@ class ObjectionRequest(BaseModel):
     farmer_name: str
     objection_reason: str # e.g. "My crop is at critical flowering stage, I need 8000L more"
     requested_additional_liters: float = 8000.0
+
+
+class WaterCycleResponse(BaseModel):
+    cycle_number: int
+    message: str
+    available_volume_liters: float
+    allocation: AllocationResult
 
 class MediationProposalResponse(BaseModel):
     dispute_id: int

@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { AllocationItem, MediationProposalResponse } from '../types';
-import { MessageSquare, Bot, User, CheckCircle, Scale, ShieldAlert, Sparkles, Send, ArrowRight } from 'lucide-react';
+import { AllocationItem, AllocationResult, MediationProposalResponse } from '../types';
+import { Bot, User, CheckCircle, Scale, ShieldAlert, Sparkles, Send } from 'lucide-react';
 
 interface MediationChatProps {
   initialObjectingItem: AllocationItem | null;
   onSubmitObjection: (farmId: number, farmerName: string, text: string) => Promise<MediationProposalResponse | null>;
   onAcceptProposal: () => void;
+  allocation: AllocationResult | null;
   onClose: () => void;
 }
 
@@ -16,6 +17,7 @@ export const MediationChat: React.FC<MediationChatProps> = ({
   initialObjectingItem,
   onSubmitObjection,
   onAcceptProposal,
+  allocation,
   onClose
 }) => {
   const { t } = useLanguage();
@@ -79,14 +81,15 @@ export const MediationChat: React.FC<MediationChatProps> = ({
         {/* Conversation Body */}
         <div className="p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm bg-slate-50/50">
           
-          {/* Message 1: System Scarcity Notification */}
+          {/* Message 1: System Scarcity Notification (live values) */}
           <div className="flex items-start space-x-3 bg-amber-50 p-4 rounded-2xl border border-amber-200 text-amber-900">
             <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold block">System Notice (पाण्याची तूट):</span>
+              <span className="font-bold block">{t('waterSituationTitle')}:</span>
               <p className="mt-0.5 text-xs text-amber-800">
-                Shared canal water availability is 180,000 L, whereas total demand across 4 farms is 265,000 L (Shortage: 85,000 L).
-                Farmers may lodge objections to request mediation.
+                {allocation
+                  ? `Shared canal water availability is ${allocation.available_volume_liters.toLocaleString()} L, whereas total demand is ${allocation.total_demand_liters.toLocaleString()} L (Shortage: ${allocation.shortage_liters.toLocaleString()} L). Farmers may lodge objections to request mediation.`
+                  : 'Shared canal water data unavailable. Farmers may lodge objections to request mediation.'}
               </p>
             </div>
           </div>
@@ -112,12 +115,12 @@ export const MediationChat: React.FC<MediationChatProps> = ({
                     className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center space-x-2 disabled:opacity-50"
                   >
                     <Send className="h-3.5 w-3.5" />
-                    <span>{isSubmitting ? "LangGraph Agents Analyzing..." : t('submitObjection')}</span>
+                    <span>{isSubmitting ? 'AI Agents Analyzing...' : t('submitObjection')}</span>
                   </button>
                 </div>
               ) : (
                 <p className="text-slate-800 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  "{proposal.objection_summary}"
+                  &quot;{proposal.objection_summary}&quot;
                 </p>
               )}
             </div>
@@ -148,11 +151,14 @@ export const MediationChat: React.FC<MediationChatProps> = ({
                 </div>
               </div>
 
-              {/* Deterministic Optimizer Verification Badge */}
+              {/* Deterministic Optimizer Verification Badge (live limit) */}
               <div className="flex items-center space-x-2 bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-800">
                 <CheckCircle className="h-4 w-4 text-emerald-600" />
                 <span>
-                  <strong>Google OR-Tools Validation:</strong> Hard capacity constraints (180,000 L limit) verified. Non-negativity satisfied.
+                  <strong>Google OR-Tools Validation:</strong>{' '}
+                  {allocation
+                    ? `Hard capacity constraints (${allocation.available_volume_liters.toLocaleString()} L limit) verified. Every farm stays above its fair-share floor. Non-negativity satisfied.`
+                    : 'Hard capacity constraints verified. Non-negativity satisfied.'}
                 </span>
               </div>
             </>
@@ -178,7 +184,7 @@ export const MediationChat: React.FC<MediationChatProps> = ({
               className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2"
             >
               <CheckCircle className="h-4 w-4" />
-              <span>✓ प्रस्ताव स्वीकारा</span>
+              <span>{t('acceptProposal')}</span>
             </button>
           )}
         </div>

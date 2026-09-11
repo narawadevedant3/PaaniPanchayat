@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Droplet, Lock, Mail, User, ShieldCheck, Phone, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Droplet, Lock, Mail, User, Phone, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 import { AuthUser, UserRole } from '../types';
 
 interface AuthViewProps {
@@ -20,7 +20,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regRole, setRegRole] = useState<UserRole>('farmer');
+  const regRole: UserRole = 'farmer';
   const [regContact, setRegContact] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
@@ -51,8 +51,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         role: data.role as UserRole,
         token: data.token
       });
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to sign in. Please check your credentials.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unable to sign in. Please check your credentials.';
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
@@ -90,8 +91,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         role: data.role as UserRole,
         token: data.token
       });
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to register account.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unable to register account.';
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +125,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         });
         return;
       }
-    } catch (e) {
+    } catch {
       // Fallback local mock login if backend reset needed
     }
 

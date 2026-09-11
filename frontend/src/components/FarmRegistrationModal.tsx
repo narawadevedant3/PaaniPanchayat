@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Sprout, Plus, CheckCircle } from 'lucide-react';
+import { Sprout, Plus } from 'lucide-react';
+import { FarmFormData } from '../types';
 
 interface FarmRegistrationModalProps {
   onClose: () => void;
-  onAddFarm: (farmData: any) => Promise<void>;
+  onAddFarm: (farmData: FarmFormData) => Promise<void>;
 }
 
 export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ onClose, onAddFarm }) => {

@@ -4,18 +4,31 @@ import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { AllocationResult, AuditLogItem } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
-import { Scale, ShieldCheck, FileText, Activity, Droplets, Users, Clock, History, AlertCircle } from 'lucide-react';
+import { Scale, FileText, Activity, Droplets, Users, History, Waves, RotateCcw } from 'lucide-react';
 
 interface AdminDashboardProps {
   allocation: AllocationResult | null;
   auditLogs: AuditLogItem[];
   onTriggerReallocation: () => void;
+  onReleaseWater: (volumeLiters?: number) => void;
+  onResetDistribution: () => void;
+  isLoading: boolean;
 }
 
 const COLORS = ['#059669', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, auditLogs, onTriggerReallocation }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, auditLogs, onTriggerReallocation, onReleaseWater, onResetDistribution, isLoading }) => {
   const { t } = useLanguage();
+
+  const handleReleaseWater = () => {
+    const input = window.prompt(
+      `Release new water into the canal (liters).\nPrevious distribution will be reset and re-allocated by crop-stage urgency.`,
+      '180000'
+    );
+    if (input === null) return;
+    const volume = parseFloat(input.replace(/[^0-9.]/g, ''));
+    onReleaseWater(isNaN(volume) ? undefined : volume);
+  };
 
   if (!allocation) {
     return (
@@ -55,14 +68,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
           </p>
         </div>
 
-        <button
-          onClick={onTriggerReallocation}
-          className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2"
-        >
-          <Activity className="h-4 w-4" />
-          <span>Re-Run Solver Optimization</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* WATER CYCLE: release new water -> reset -> re-allocate */}
+          <button
+            onClick={handleReleaseWater}
+            disabled={isLoading}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
+            title="Simulate new water arriving in the canal; previous distribution resets and re-allocation runs by crop-stage urgency"
+          >
+            <Waves className={`h-4 w-4 ${isLoading ? 'animate-pulse' : ''}`} />
+            <span>{t('releaseWater')}</span>
+          </button>
+          <button
+            onClick={onResetDistribution}
+            disabled={isLoading}
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
+            title="Clear current allocations until the next water release"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>{t('resetDistribution')}</span>
+          </button>
+          <button
+            onClick={onTriggerReallocation}
+            disabled={isLoading}
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
+          >
+            <Activity className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Re-Run Solver Optimization</span>
+          </button>
+        </div>
       </div>
+
+      {/* Water Cycle Banner */}
+      {allocation.cycle_number !== undefined && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 px-5 py-3 rounded-2xl flex items-center justify-between text-xs sm:text-sm">
+          <span className="flex items-center gap-2 font-bold">
+            <Waves className="h-4 w-4 text-blue-600" />
+            {t('waterCycle')} #{allocation.cycle_number}
+          </span>
+          <span className="text-blue-700 hidden sm:block">{t('waterArrivalNotice')}</span>
+          {allocation.is_accepted ? (
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">✓ Accepted</span>
+          ) : (
+            <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 font-bold border border-amber-200">Pending Acceptance</span>
+          )}
+        </div>
+      )}
 
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -97,6 +148,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
             v{allocation.version}
           </span>
           <span className="text-[11px] text-emerald-600 font-medium">Validated by OR-Tools Solver</span>
+          {allocation.cycle_number !== undefined && (
+            <span className="text-[11px] text-blue-600 font-bold block mt-0.5">{t('cycle')} #{allocation.cycle_number}</span>
+          )}
         </div>
 
       </div>
@@ -217,7 +271,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
             <p className="text-xs text-slate-400 italic">No audit records logged yet.</p>
           ) : (
             auditLogs.map((log) => (
-              <div key={log.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div key={`${log.id}-${log.timestamp}`} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold text-[10px] uppercase border border-emerald-200">
