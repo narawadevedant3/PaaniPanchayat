@@ -19,6 +19,3 @@ dependencies = [
     "langchain-google-genai>=0.0.10",
     "python-dotenv>=1.0.1",
 ]
-
-[tool.vercel]
-entrypoint = "api.index:app"

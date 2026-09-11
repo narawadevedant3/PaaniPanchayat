@@ -44,14 +44,18 @@ app.add_middleware(
 
 app.include_router(router)
 
-@app.get("/")
-def root():
+@app.get("/api")
+def api_root():
     return {
         "platform": "PaaniPanchayat",
         "tagline": "Fair Water. Peaceful Farming.",
         "status": "Online",
         "docs_url": "/docs"
     }
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
