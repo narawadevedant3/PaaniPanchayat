@@ -1,3 +1,8 @@
+import sys
+import os
+# Ensure the backend directory is in sys.path so 'app' imports work from any working directory
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,10 +12,24 @@ from app.database import SessionLocal, Base, engine
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db = SessionLocal()
+    try:
+        # Seed demo data on initial startup
+        reset_demo_data(db)
+        print("[SUCCESS] PaaniPanchayat Backend Initialized with 4 Demo Farms!")
+    finally:
+        db.close()
+    yield
+
 app = FastAPI(
     title="PaaniPanchayat API",
     description="AI-Powered Water Sharing & Dispute Mediation Platform for Farmers",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Enable CORS for local & Next.js frontend calls
@@ -23,16 +42,6 @@ app.add_middleware(
 )
 
 app.include_router(router)
-
-@app.on_event("startup")
-def startup_event():
-    db = SessionLocal()
-    try:
-        # Seed demo data on initial startup
-        reset_demo_data(db)
-        print("[SUCCESS] PaaniPanchayat Backend Initialized with 4 Demo Farms!")
-    finally:
-        db.close()
 
 @app.get("/")
 def root():
