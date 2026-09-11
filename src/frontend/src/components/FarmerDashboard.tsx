@@ -37,7 +37,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'home' | 'farm' | 'water' | 'mediation' | 'profile'>('home');
   const [cooldown, setCooldown] = useState<{ can_request: boolean; message?: string; hours_remaining?: number; days_remaining?: number } | null>(null);
 
-  const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL 
+    || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? `http://${window.location.hostname}:8000/api` 
+        : '/api');
 
   React.useEffect(() => {
     if (selectedFarmId) {

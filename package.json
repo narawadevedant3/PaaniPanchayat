@@ -4,6 +4,9 @@
   "description": "PaaniPanchayat — Fair Water. Peaceful Farming. AI-driven water sharing and dispute mediation platform.",
   "private": true,
   "scripts": {
+    "dev": "npm --prefix src/frontend run dev",
+    "build": "npm --prefix src/frontend run build",
+    "start": "npm --prefix src/frontend run start",
     "dev:frontend": "npm --prefix src/frontend run dev",
     "dev:backend": "uvicorn app.main:app --app-dir src/backend --reload --port 8000",
     "build:frontend": "npm --prefix src/frontend run build",

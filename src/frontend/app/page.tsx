@@ -11,7 +11,10 @@ import { AuthView } from '../src/components/AuthView';
 import { Footer } from '../src/components/Footer';
 import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse, AuthUser, FarmFormData, RequirementBreakdown } from '../src/types';
 
-const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL 
+  || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `http://${window.location.hostname}:8000/api` 
+      : '/api');
 
 // Fallback initial dataset matching PRD Section 29
 const INITIAL_DEMO_ALLOCATION: AllocationResult = {
