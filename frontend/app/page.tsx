@@ -9,7 +9,7 @@ import { WhyExplanationModal } from '../src/components/WhyExplanationModal';
 import { FarmRegistrationModal } from '../src/components/FarmRegistrationModal';
 import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse } from '../src/types';
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
 
 // Fallback initial dataset matching PRD Section 29
 const INITIAL_DEMO_ALLOCATION: AllocationResult = {
