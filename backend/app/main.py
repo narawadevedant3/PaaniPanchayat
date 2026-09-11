@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import router, reset_demo_data
 from app.database import SessionLocal, Base, engine
+from app import models
 
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
@@ -28,9 +29,11 @@ app.include_router(router)
 def startup_event():
     db = SessionLocal()
     try:
-        # Seed demo data on initial startup
-        reset_demo_data(db)
-        print("[SUCCESS] PaaniPanchayat Backend Initialized with 4 Demo Farms!")
+        if db.query(models.User).count() == 0:
+            reset_demo_data(db)
+            print("[SUCCESS] PaaniPanchayat Backend Initialized with Demo Farms!")
+        else:
+            print("[INFO] PaaniPanchayat Backend loaded existing database records.")
     finally:
         db.close()
 

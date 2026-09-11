@@ -45,31 +45,86 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
     );
   }
 
-  // Extract primary owner identifier (e.g. "Ramesh" from "Ramesh (Farmer)" or "Ramesh (Farm A)")
-  const extractPrimaryName = (fullName?: string) => {
-    if (!fullName) return '';
-    const clean = fullName.split('(')[0].trim();
-    return clean.split(' ')[0].toLowerCase().trim();
+  // Helper to match farmer allocations to logged in user profile
+  const matchFarmerAllocation = (itemFarmerName: string, user: AuthUser | null | undefined) => {
+    if (!user) return true;
+    const userEmail = user.email ? user.email.toLowerCase().trim() : '';
+    const userName = user.name ? user.name.toLowerCase().trim() : '';
+    const itemOwner = itemFarmerName.toLowerCase().trim();
+
+    const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const cleanEmailPrefix = userEmail ? cleanString(userEmail.split('@')[0]) : '';
+    const cleanUserName = cleanString(userName);
+    const cleanItemOwner = cleanString(itemOwner);
+
+    // 1. Direct alphanumeric containment match (handles spaces/punctuation differences)
+    if (cleanUserName && cleanUserName.length > 2 && cleanItemOwner.includes(cleanUserName)) return true;
+    if (cleanEmailPrefix && cleanEmailPrefix.length > 2 && cleanItemOwner.includes(cleanEmailPrefix)) return true;
+
+    // 2. Email handle match
+    const emailPrefix = userEmail.split('@')[0];
+    if (emailPrefix && emailPrefix.length > 2 && itemOwner.includes(emailPrefix)) {
+      return true;
+    }
+
+    // 3. First name overlap (e.g. "Ramesh" in "Ramesh (Farm A)")
+    const userFirstName = userName.split('(')[0].trim().split(' ')[0];
+    const itemFirstName = itemOwner.split('(')[0].trim().split(' ')[0];
+
+    if (userFirstName && itemFirstName && userFirstName.length > 2 && itemFirstName.length > 2) {
+      if (userFirstName === itemFirstName || itemOwner.includes(userFirstName) || userFirstName.includes(itemFirstName)) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
-  const loggedInFirstName = extractPrimaryName(authUser?.name) || extractPrimaryName(allocation.allocations[0]?.farmer_name);
+  // Filter allocations to strictly show ONLY lands belonging to this logged-in farmer profile
+  const myAllocations = allocation.allocations.filter(a => matchFarmerAllocation(a.farmer_name, authUser));
 
-  // Filter allocations to only show lands belonging to this logged-in farmer account
-  const myAllocations = allocation.allocations.filter(a => {
-    if (!loggedInFirstName) return true;
-    const farmOwnerFirstName = extractPrimaryName(a.farmer_name);
-    return farmOwnerFirstName === loggedInFirstName ||
-      a.farmer_name.toLowerCase().includes(loggedInFirstName) ||
-      a.farm_id === selectedFarmId;
-  });
-
-  const displayedAllocations = myAllocations.length > 0 ? myAllocations : [allocation.allocations[0]];
+  const displayedAllocations = myAllocations;
 
   // Active farm selected dynamically in Farmer view
   const currentAllocationItem = displayedAllocations.find(a => a.farm_id === selectedFarmId) || displayedAllocations[0];
-  const activeFarm = farms.find(f => f.id === currentAllocationItem.farm_id);
+  const activeFarm = currentAllocationItem ? farms.find(f => f.id === currentAllocationItem.farm_id) : undefined;
 
-  const farmerGreetingName = authUser?.name || currentAllocationItem.farmer_name;
+  const farmerGreetingName = authUser?.name || (currentAllocationItem ? currentAllocationItem.farmer_name : 'Farmer');
+
+  // If logged in farmer has no registered farms in their profile yet
+  if (displayedAllocations.length === 0 || !currentAllocationItem) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-900">
+        <div className="bg-emerald-700 text-white p-6 rounded-3xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-xl font-extrabold text-white">Welcome, {farmerGreetingName}</h2>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-100 font-semibold">
+                Farmer Profile Active
+              </span>
+            </div>
+            <p className="text-xs text-emerald-100 mt-1">No registered land parcels found for profile: {authUser?.email}</p>
+          </div>
+          <button
+            onClick={onOpenAddFarmModal}
+            className="px-5 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-md flex items-center space-x-1.5"
+          >
+            <Sprout className="h-4 w-4 text-emerald-700" />
+            <span>+ Register Your Land</span>
+          </button>
+        </div>
+
+        <div className="bg-white p-8 rounded-3xl border border-emerald-100 text-center shadow-sm space-y-3">
+          <Droplets className="h-12 w-12 text-emerald-600 mx-auto animate-pulse" />
+          <h3 className="text-lg font-bold text-slate-900">No Farm Parcels Registered in Profile</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            You are logged in as <strong>{authUser?.name}</strong>. Click <strong>"+ Register Your Land"</strong> above to register your acreage, crop stage, and soil conditions to calculate your OR-Tools water allocation.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const reqLiters = currentAllocationItem.required_liters;
   const allocLiters = currentAllocationItem.allocated_liters;

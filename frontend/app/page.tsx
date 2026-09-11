@@ -143,14 +143,20 @@ export default function Home() {
   // Automatically bind selectedFarmId to logged in user's farm
   useEffect(() => {
     if (authUser && allocation && allocation.allocations.length > 0) {
-      const userFirstName = authUser.name.split(' ')[0].toLowerCase();
-      const matched = allocation.allocations.find(a => 
-        a.farmer_name.toLowerCase().includes(userFirstName) ||
-        a.farm_id === authUser.user_id
-      );
+      const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const userEmailPrefix = authUser.email ? cleanString(authUser.email.split('@')[0]) : '';
+      const cleanUserName = authUser.name ? cleanString(authUser.name) : '';
+
+      const matched = allocation.allocations.find(a => {
+        const cleanItemOwner = cleanString(a.farmer_name);
+        if (cleanUserName && cleanUserName.length > 2 && cleanItemOwner.includes(cleanUserName)) return true;
+        if (userEmailPrefix && userEmailPrefix.length > 2 && cleanItemOwner.includes(userEmailPrefix)) return true;
+        return false;
+      });
+
       if (matched) {
         setSelectedFarmId(matched.farm_id);
-      } else {
+      } else if (allocation.allocations.length > 0) {
         setSelectedFarmId(allocation.allocations[0].farm_id);
       }
     }

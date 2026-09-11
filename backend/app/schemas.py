@@ -41,6 +41,7 @@ class UserResponse(UserBase):
 
 # Farm Schemas
 class FarmCreate(BaseModel):
+    user_id: Optional[int] = None
     farmer_name: str
     location: str = "Pune Region, MH"
     latitude: float = 18.5204

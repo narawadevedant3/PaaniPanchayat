@@ -283,7 +283,12 @@ def get_farms(db: Session = Depends(get_db)):
 
 @router.post("/farms", response_model=schemas.FarmResponse)
 def create_farm(farm_in: schemas.FarmCreate, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.name == farm_in.farmer_name).first()
+    CURRENT_STATE["last_allocation"] = None
+    user = None
+    if farm_in.user_id:
+        user = db.query(models.User).filter(models.User.id == farm_in.user_id).first()
+    if not user:
+        user = db.query(models.User).filter(models.User.name == farm_in.farmer_name).first()
     if not user:
         user = models.User(name=farm_in.farmer_name, role="farmer")
         db.add(user)
@@ -376,9 +381,6 @@ def calculate_req_endpoint(req: schemas.WaterRequirementCalculationRequest):
 # --- ALLOCATION & OPTIMIZATION ENDPOINT ---
 @router.post("/allocation/generate", response_model=schemas.AllocationResult)
 def generate_allocation_endpoint(db: Session = Depends(get_db)):
-    if CURRENT_STATE.get("last_allocation"):
-        return CURRENT_STATE["last_allocation"]
-
     farms = db.query(models.Farm).all()
     farms_data = []
     for f in farms:
