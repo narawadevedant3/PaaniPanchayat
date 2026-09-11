@@ -44,80 +44,67 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
   };
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-md bg-emerald-950/90 border-b border-emerald-800/50 text-white shadow-xl">
+    <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 border-b border-emerald-100 text-slate-800 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
         {/* Brand Logo & Name */}
         <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 p-0.5 shadow-lg shadow-cyan-500/30 flex items-center justify-center">
-            <div className="h-full w-full bg-emerald-950 rounded-[10px] flex items-center justify-center">
-              <Droplets className="h-5 w-5 text-cyan-400 animate-pulse" />
+          <div className="h-10 w-10 rounded-xl bg-emerald-600 p-0.5 shadow-md shadow-emerald-600/20 flex items-center justify-center">
+            <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center">
+              <Droplets className="h-5 w-5 text-emerald-600" />
             </div>
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white via-emerald-100 to-cyan-300 bg-clip-text text-transparent">
+              <span className="font-extrabold text-xl tracking-tight text-emerald-950">
                 {t('appTitle')}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
                 PWA MVP
               </span>
             </div>
-            <p className="text-xs text-emerald-300/70 hidden sm:block">
+            <p className="text-xs text-slate-500 hidden sm:block">
               {t('tagline')}
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          
-          {/* Demo Reset Button (Hidden for Admin) */}
-          {currentRole !== 'admin' && (
-            <button
-              onClick={onResetDemo}
-              disabled={isLoading}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 text-emerald-100 text-xs sm:text-sm font-medium transition border border-emerald-600/40 shadow-sm disabled:opacity-50"
-              title="Load 4-Farmer Scarcity Demo Preset"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${isLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden md:inline">{t('demoReset')}</span>
-            </button>
-          )}
+        <div className="flex items-center space-x-2 sm:space-x-3">
 
           {/* Active Role Badge */}
-          <div className="flex items-center px-3 py-1 bg-emerald-900/80 rounded-lg border border-emerald-700/50 text-xs font-semibold">
+          <div className="flex items-center px-3 py-1 bg-emerald-50 rounded-lg border border-emerald-200 text-xs font-semibold">
             {currentRole === 'admin' ? (
-              <span className="flex items-center space-x-1 text-amber-300">
-                <Scale className="h-3.5 w-3.5 text-amber-400" />
+              <span className="flex items-center space-x-1 text-amber-700">
+                <Scale className="h-3.5 w-3.5 text-amber-600" />
                 <span>Panchayat Admin</span>
               </span>
             ) : (
-              <span className="flex items-center space-x-1 text-cyan-300">
-                <User className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="flex items-center space-x-1 text-emerald-800">
+                <User className="h-3.5 w-3.5 text-emerald-600" />
                 <span>Farmer Portal</span>
               </span>
             )}
           </div>
 
           {/* Language Switcher */}
-          <div className="relative flex items-center bg-emerald-900/60 px-2 py-1 rounded-lg border border-emerald-700/40 text-xs">
-            <Globe className="h-3.5 w-3.5 text-emerald-300 mr-1.5" />
+          <div className="relative flex items-center bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 text-xs">
+            <Globe className="h-3.5 w-3.5 text-slate-600 mr-1.5" />
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as Language)}
-              className="bg-transparent text-emerald-100 text-xs font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-800 text-xs font-medium focus:outline-none cursor-pointer"
             >
-              <option value="en" className="bg-emerald-950 text-white">English</option>
-              <option value="hi" className="bg-emerald-950 text-white">हिंदी</option>
-              <option value="mr" className="bg-emerald-950 text-white">मराठी</option>
+              <option value="en" className="bg-white text-slate-900">English</option>
+              <option value="hi" className="bg-white text-slate-900">हिंदी</option>
+              <option value="mr" className="bg-white text-slate-900">मराठी</option>
             </select>
           </div>
 
           {/* PWA Install App Button */}
           <button
             onClick={handleInstallApp}
-            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white text-xs font-medium shadow-md shadow-cyan-900/40 transition"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium shadow-sm transition"
             title="Install PWA to Home Screen"
           >
             <Download className="h-3.5 w-3.5" />
@@ -126,15 +113,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
 
           {/* User Profile & Logout */}
           {authUser && (
-            <div className="flex items-center space-x-2 pl-2 border-l border-emerald-800/60">
+            <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-emerald-100">{authUser.name}</span>
-                <span className="text-[10px] text-emerald-400/80 capitalize">{authUser.role}</span>
+                <span className="text-xs font-bold text-slate-900">{authUser.name}</span>
+                <span className="text-[10px] text-emerald-700 font-semibold capitalize">{authUser.role}</span>
               </div>
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-rose-100 border border-rose-800/40 transition"
+                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition"
                   title="Sign Out"
                 >
                   <LogOut className="h-3.5 w-3.5" />

@@ -10,7 +10,7 @@ import { FarmRegistrationModal } from '../src/components/FarmRegistrationModal';
 import { AuthView } from '../src/components/AuthView';
 import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse, AuthUser } from '../src/types';
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
 
 // Fallback initial dataset matching PRD Section 29
 const INITIAL_DEMO_ALLOCATION: AllocationResult = {
@@ -290,13 +290,21 @@ export default function Home() {
   // Add New Farm
   const handleAddFarm = async (farmData: any) => {
     try {
+      const payload = {
+        ...farmData,
+        user_id: authUser?.user_id || undefined
+      };
       const res = await fetch(`${API_BASE}/farms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(farmData)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
+        const newFarm = await res.json();
         await refreshBackendData();
+        if (newFarm && newFarm.id) {
+          setSelectedFarmId(newFarm.id);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -308,7 +316,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-emerald-950 font-sans">
+    <div className="min-h-screen flex flex-col bg-[#f2f6f4] text-slate-900 font-sans">
       
       {/* Header Navigation */}
       <Navbar
@@ -368,8 +376,8 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-emerald-900 bg-emerald-950/80 p-4 text-center text-xs text-emerald-400/80">
-        <p>PaaniPanchayat — AI-Powered Water Sharing & Dispute Mediation Platform for Farmers (PS14 Hackathon MVP)</p>
+      <footer className="border-t border-emerald-100 bg-white p-4 text-center text-xs text-slate-500 shadow-inner">
+        <p className="font-medium">PaaniPanchayat — AI-Powered Water Sharing & Dispute Mediation Platform for Farmers (PS14 Hackathon MVP)</p>
       </footer>
 
     </div>

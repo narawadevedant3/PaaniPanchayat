@@ -37,21 +37,21 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-emerald-950 border border-emerald-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white border border-emerald-100 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-slate-800">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-emerald-800 pb-4">
+        <div className="flex items-center justify-between border-b border-emerald-100 pb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-300">
+            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700">
               <Sprout className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Register New Farm</h3>
-              <p className="text-xs text-emerald-300">Farmer Onboarding Wizard</p>
+              <h3 className="text-lg font-bold text-slate-900">Register New Farm</h3>
+              <p className="text-xs text-emerald-700 font-medium">Farmer Onboarding Wizard</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-emerald-400 hover:text-white font-bold text-sm">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-sm">
             ✕
           </button>
         </div>
@@ -60,24 +60,24 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           
           <div>
-            <label className="text-emerald-300 font-bold block mb-1">Farmer Name:</label>
+            <label className="text-slate-700 font-bold block mb-1">Farmer Name:</label>
             <input
               type="text"
               required
               placeholder="e.g. Dnyaneshwar Patil"
               value={formData.farmer_name}
               onChange={(e) => setFormData({ ...formData, farmer_name: e.target.value })}
-              className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-emerald-300 font-bold block mb-1">Crop Type:</label>
+              <label className="text-slate-700 font-bold block mb-1">Crop Type:</label>
               <select
                 value={formData.crop_name}
                 onChange={(e) => setFormData({ ...formData, crop_name: e.target.value })}
-                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
               >
                 <option value="Wheat">Wheat</option>
                 <option value="Tomato">Tomato</option>
@@ -89,7 +89,7 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
             </div>
 
             <div>
-              <label className="text-emerald-300 font-bold block mb-1">Farm Area (Acres):</label>
+              <label className="text-slate-700 font-bold block mb-1">Farm Area (Acres):</label>
               <input
                 type="number"
                 step="0.5"
@@ -97,18 +97,18 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
                 max="50"
                 value={formData.area_acres}
                 onChange={(e) => setFormData({ ...formData, area_acres: parseFloat(e.target.value) || 1.0 })}
-                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-emerald-300 font-bold block mb-1">Growth Stage:</label>
+              <label className="text-slate-700 font-bold block mb-1">Growth Stage:</label>
               <select
                 value={formData.growth_stage}
                 onChange={(e) => setFormData({ ...formData, growth_stage: e.target.value })}
-                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
               >
                 <option value="Flowering">Flowering</option>
                 <option value="Fruit Development">Fruit Development</option>
@@ -119,11 +119,11 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
             </div>
 
             <div>
-              <label className="text-emerald-300 font-bold block mb-1">Soil Type:</label>
+              <label className="text-slate-700 font-bold block mb-1">Soil Type:</label>
               <select
                 value={formData.soil_type}
                 onChange={(e) => setFormData({ ...formData, soil_type: e.target.value })}
-                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
               >
                 <option value="Clay">Clay</option>
                 <option value="Loam">Loam</option>
@@ -133,18 +133,18 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
             </div>
           </div>
 
-          <div className="pt-3 border-t border-emerald-800 flex justify-end space-x-3">
+          <div className="pt-3 border-t border-slate-100 flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-emerald-300 font-semibold transition"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-400 text-emerald-950 font-bold transition flex items-center space-x-1.5"
+              className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition shadow-sm flex items-center space-x-1.5"
             >
               <Plus className="h-4 w-4" />
               <span>{isSubmitting ? "Saving..." : "Add Farm & Calculate Need"}</span>
