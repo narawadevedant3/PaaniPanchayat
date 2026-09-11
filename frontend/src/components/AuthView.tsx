@@ -102,7 +102,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         throw new Error(data.detail || 'Registration failed');
       }
 
-<<<<<<< HEAD
       // Automatically sign in newly registered user immediately!
       onLoginSuccess({
         user_id: data.user_id,
@@ -114,19 +113,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unable to register account.';
       setErrorMsg(msg);
-=======
-      // On successful registration, pre-fill email, switch to Sign In tab, and show success notification
-      setLoginEmail(regEmail.trim());
-      setLoginPassword('');
-      setRegName('');
-      setRegEmail('');
-      setRegPassword('');
-      setRegContact('');
-      setActiveTab('login');
-      setSuccessMsg('Account registered successfully! Please sign in with your email and password.');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to register account.');
->>>>>>> origin/pranav
     } finally {
       setIsLoading(false);
     }

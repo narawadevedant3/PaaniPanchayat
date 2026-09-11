@@ -6,11 +6,7 @@ import { LanguageProvider } from "../src/context/LanguageContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const viewport: Viewport = {
-<<<<<<< HEAD
-  themeColor: "#1F6F6A",
-=======
   themeColor: "#0d9488",
->>>>>>> origin/pranav
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -21,8 +17,6 @@ export const metadata: Metadata = {
   title: "PaaniPanchayat — Fair Water. Peaceful Farming.",
   description: "AI-Powered Water Sharing & Dispute Mediation Platform for Farmers",
   manifest: "/manifest.json",
-<<<<<<< HEAD
-=======
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -31,7 +25,6 @@ export const metadata: Metadata = {
     shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
->>>>>>> origin/pranav
 };
 
 export default function RootLayout({
