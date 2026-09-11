@@ -139,7 +139,7 @@ def solve_water_allocation(
         reasoning = [
             f"🎯 Allocated {allocated:,.0f} L out of {req:,.0f} L required ({pct_fulfilled:.1f}% fulfilled).",
             f"⚖️ Priority Weight Score: {weights[i]:.2f}x (Stage: '{stage}').",
-            f"🛡️ Fairness Floor Applied: minimum {floors[i]:,.0f} L guaranteed share.",
+            f"🤝 Fairness rating: {fairness}/100 (guaranteed floor: {floors[i]:,.0f} L).",
         ]
 
         if unmet > 0:
@@ -151,6 +151,8 @@ def solve_water_allocation(
 
         allocations.append(AllocationItem(
             farm_id=farm_id,
+            user_id=farm.get('user_id'),
+            user_email=farm.get('user_email'),
             farmer_name=farm.get('farmer_name', 'Unknown'),
             crop_name=farm.get('crop_name', 'Crop'),
             area_acres=farm.get('area_acres', 0.0),

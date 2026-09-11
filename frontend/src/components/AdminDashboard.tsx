@@ -1,24 +1,62 @@
-"use client";
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { AllocationResult, AuditLogItem } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
-import { Scale, FileText, Activity, Droplets, Users, History, Waves, RotateCcw } from 'lucide-react';
+import { Scale, ShieldCheck, FileText, Activity, Droplets, Users, Clock, History, AlertCircle, Edit3, Check, X, Waves, RotateCcw } from 'lucide-react';
 
 interface AdminDashboardProps {
   allocation: AllocationResult | null;
   auditLogs: AuditLogItem[];
   onTriggerReallocation: () => void;
-  onReleaseWater: (volumeLiters?: number) => void;
-  onResetDistribution: () => void;
-  isLoading: boolean;
+  onReleaseWater?: (volumeLiters?: number) => void;
+  onResetDistribution?: () => void;
+  isLoading?: boolean;
+  onAcceptAllocation?: (version: number, farmId?: number) => void;
+  onUpdateWaterSupply?: (newSupplyLiters: number) => Promise<void>;
+  isAccepted?: boolean;
+  acceptedFarmIds?: number[];
 }
 
 const COLORS = ['#059669', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, auditLogs, onTriggerReallocation, onReleaseWater, onResetDistribution, isLoading }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  allocation,
+  auditLogs,
+  onTriggerReallocation,
+  onReleaseWater,
+  onResetDistribution,
+  isLoading = false,
+  onAcceptAllocation,
+  onUpdateWaterSupply,
+  isAccepted = false,
+  acceptedFarmIds = []
+}) => {
   const { t } = useLanguage();
+  const [isEditingSupply, setIsEditingSupply] = useState(false);
+  const [supplyInput, setSupplyInput] = useState<string>('');
+  const [isSavingSupply, setIsSavingSupply] = useState(false);
+
+  const handleStartEditSupply = () => {
+    if (allocation) {
+      setSupplyInput(allocation.available_volume_liters.toString());
+      setIsEditingSupply(true);
+    }
+  };
+
+  const handleSaveSupply = async () => {
+    const val = parseFloat(supplyInput);
+    if (!isNaN(val) && val >= 0 && onUpdateWaterSupply) {
+      setIsSavingSupply(true);
+      try {
+        await onUpdateWaterSupply(val);
+        setIsEditingSupply(false);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSavingSupply(false);
+      }
+    }
+  };
 
   const handleReleaseWater = () => {
     const input = window.prompt(
@@ -37,6 +75,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
       </div>
     );
   }
+
+  // Filter dispute audit logs
+  const disputeLogs = auditLogs.filter(
+    log => log.entity_type === 'Dispute' || log.action.includes('MEDIATION') || log.action.includes('OBJECTION')
+  );
 
   const chartData = allocation.allocations.map(a => ({
     name: a.farmer_name.split(' ')[0],
@@ -60,42 +103,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
             <Scale className="h-6 w-6 text-amber-600" />
             <h2 className="text-2xl font-black text-slate-900">{t('adminView')}</h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold border border-amber-200">
-              WUA & Judge Inspector
+              WUA & Water Officer Portal
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time OR-Tools Linear Solver status, LangGraph multi-agent execution, and audit trail.
+            Real-time OR-Tools Linear Solver status, AI Dispute Mediation logs, and village audit ledger.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* WATER CYCLE: release new water -> reset -> re-allocate */}
-          <button
-            onClick={handleReleaseWater}
-            disabled={isLoading}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
-            title="Simulate new water arriving in the canal; previous distribution resets and re-allocation runs by crop-stage urgency"
-          >
-            <Waves className={`h-4 w-4 ${isLoading ? 'animate-pulse' : ''}`} />
-            <span>{t('releaseWater')}</span>
-          </button>
-          <button
-            onClick={onResetDistribution}
-            disabled={isLoading}
-            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
-            title="Clear current allocations until the next water release"
-          >
-            <RotateCcw className="h-4 w-4" />
-            <span>{t('resetDistribution')}</span>
-          </button>
+          {onReleaseWater && (
+            <button
+              onClick={handleReleaseWater}
+              disabled={isLoading}
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
+              title="Simulate new water arriving in the canal; previous distribution resets and re-allocation runs by crop-stage urgency"
+            >
+              <Waves className={`h-4 w-4 ${isLoading ? 'animate-pulse' : ''}`} />
+              <span>{t('releaseWater')}</span>
+            </button>
+          )}
+          {onResetDistribution && (
+            <button
+              onClick={onResetDistribution}
+              disabled={isLoading}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
+              title="Clear current allocations until the next water release"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>{t('resetDistribution')}</span>
+            </button>
+          )}
           <button
             onClick={onTriggerReallocation}
             disabled={isLoading}
-            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
           >
-            <Activity className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Re-Run Solver Optimization</span>
+            <Activity className={`h-4 w-4 text-emerald-600 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Re-Run Solver</span>
           </button>
+
+          {onAcceptAllocation && (
+            <button
+              onClick={() => onAcceptAllocation(allocation.version)}
+              disabled={isAccepted}
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center space-x-1.5 ${
+                isAccepted
+                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              <span>{isAccepted ? 'Allocation Accepted & Locked ✅' : `Accept & Lock Allocation (v${allocation.version})`}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -118,12 +180,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm">
-          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Available Canal Supply</span>
-          <span className="text-3xl font-black text-emerald-700 mt-1 block">
-            {allocation.available_volume_liters.toLocaleString()} L
-          </span>
-          <span className="text-[11px] text-slate-500">Canal Source Capacity #1</span>
+        <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Available Canal Supply</span>
+              {!isEditingSupply && (
+                <button
+                  onClick={handleStartEditSupply}
+                  className="text-xs text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 transition"
+                  title="Edit Canal Water Supply"
+                >
+                  <Edit3 className="h-3 w-3" />
+                  <span>Edit</span>
+                </button>
+              )}
+            </div>
+
+            {isEditingSupply ? (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    value={supplyInput}
+                    onChange={(e) => setSupplyInput(e.target.value)}
+                    placeholder="Volume in Liters"
+                    className="w-full text-base font-bold px-3 py-1.5 border border-emerald-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    autoFocus
+                  />
+                  <span className="text-xs font-bold text-slate-600">L</span>
+                </div>
+                <div className="flex items-center space-x-2 pt-1">
+                  <button
+                    onClick={handleSaveSupply}
+                    disabled={isSavingSupply}
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-1 transition shadow-sm"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>{isSavingSupply ? 'Saving...' : 'Save & Solve'}</span>
+                  </button>
+                  <button
+                    onClick={() => setIsEditingSupply(false)}
+                    disabled={isSavingSupply}
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center transition"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <span className="text-3xl font-black text-emerald-700 mt-1 block">
+                {allocation.available_volume_liters.toLocaleString()} L
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500 mt-2 block">Canal Source Capacity #1</span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">
@@ -254,6 +364,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Active Disputes & AI Mediations Section */}
+      <div className="bg-white rounded-3xl border border-amber-200 p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            <h3 className="font-bold text-base text-slate-900">Active Farmer Objections & AI Mediation Proposals</h3>
+          </div>
+          <span className="text-xs text-amber-800 font-bold bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            {disputeLogs.length} Dispute Event(s)
+          </span>
+        </div>
+
+        {disputeLogs.length === 0 ? (
+          <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-500">
+            No active disputes raised yet. All farmers are currently on standard allocation version v{allocation.version}.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {disputeLogs.map((dispute) => {
+              const disputeFarmId = Number(dispute.entity_id);
+              const isThisDisputeAccepted = isAccepted || (acceptedFarmIds && acceptedFarmIds.includes(disputeFarmId));
+
+              return (
+                <div key={dispute.id} className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-slate-900 text-sm">
+                        👨‍🌾 {typeof dispute.details === 'object' && dispute.details?.farmer ? dispute.details.farmer : `Farm #${dispute.entity_id}`}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] uppercase border border-amber-200">
+                        Farm #{dispute.entity_id} Objection
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {new Date(dispute.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+
+                  {typeof dispute.details === 'object' && dispute.details?.objection && (
+                    <p className="text-slate-700 bg-white p-2.5 rounded-xl border border-amber-100 italic">
+                      "{dispute.details.objection}"
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      AI Compromise Plan Validated by OR-Tools
+                    </span>
+
+                    {onAcceptAllocation && (
+                      <button
+                        onClick={() => onAcceptAllocation(allocation.version, disputeFarmId)}
+                        disabled={isThisDisputeAccepted}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm transition ${
+                          isThisDisputeAccepted
+                            ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {isThisDisputeAccepted ? 'Approved & Accepted ✅' : 'Approve & Accept Proposal'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Immutable Audit Log Section */}

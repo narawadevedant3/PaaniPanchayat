@@ -41,6 +41,7 @@ class UserResponse(UserBase):
 
 # Farm Schemas
 class FarmCreate(BaseModel):
+    user_id: Optional[int] = None
     farmer_name: str
     location: str = "Pune Region, MH"
     latitude: float = 18.5204
@@ -57,6 +58,8 @@ class FarmCreate(BaseModel):
 
 class FarmResponse(BaseModel):
     id: int
+    user_id: Optional[int] = None
+    user_email: Optional[str] = None
     farmer_name: str
     location: str
     latitude: float
@@ -104,6 +107,8 @@ class WaterRequirementResponse(BaseModel):
 # Optimization & Allocation Schemas
 class AllocationItem(BaseModel):
     farm_id: int
+    user_id: Optional[int] = None
+    user_email: Optional[str] = None
     farmer_name: str
     crop_name: str
     area_acres: float
@@ -135,6 +140,10 @@ class WaterCycleRequest(BaseModel):
     """Request to simulate a new water release into the shared canal."""
     new_volume_liters: float = 180000.0
     source_name: Optional[str] = None
+
+class WaterSourceUpdate(BaseModel):
+    available_volume_liters: float
+
 
 # Dispute & Mediation Schemas
 class ObjectionRequest(BaseModel):

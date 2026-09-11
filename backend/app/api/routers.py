@@ -44,9 +44,11 @@ def _require_user(db: Session, token: Optional[str]) -> models.User:
     return user
 
 
-def _farm_optimizer_input(farm: models.Farm, crop: models.Crop, req_vol: float) -> Dict[str, Any]:
+def _farm_optimizer_input(farm: models.Farm, crop: models.Crop, req_vol: float, user: Optional[models.User] = None) -> Dict[str, Any]:
     return {
         "id": farm.id,
+        "user_id": farm.user_id,
+        "user_email": user.email if user else None,
         "farmer_name": farm.farmer_name,
         "crop_name": crop.name if crop else "Crop",
         "area_acres": farm.area_acres,
@@ -70,7 +72,8 @@ def _build_farms_data(db: Session) -> List[Dict[str, Any]]:
             .first()
         )
         req_vol = req.estimated_volume_liters if req else 50000.0
-        farms_data.append(_farm_optimizer_input(f, crop, req_vol))
+        u = db.query(models.User).filter(models.User.id == f.user_id).first() if f.user_id else None
+        farms_data.append(_farm_optimizer_input(f, crop, req_vol, u))
     return farms_data
 
 
@@ -190,6 +193,7 @@ def reset_demo_data(db: Session = Depends(get_db)):
     """
     Resets the database with the exact PRD Section 29 4-Farm Demo Scenario.
     """
+    CURRENT_STATE["last_allocation"] = None
     db.query(models.AuditLog).delete()
     CURRENT_STATE["audit_logs"] = []  # clear in-memory mirror too
     db.query(models.Agreement).delete()
@@ -293,6 +297,8 @@ def reset_demo_data(db: Session = Depends(get_db)):
 
         farms_optimizer_input.append({
             "id": farm.id,
+            "user_id": user.id,
+            "user_email": user.email,
             "farmer_name": f["name"],
             "crop_name": f["crop"],
             "area_acres": f["area"],
@@ -345,8 +351,11 @@ def get_farms(
     res = []
     for f in farms:
         crop = db.query(models.Crop).filter(models.Crop.farm_id == f.id).first()
+        u = db.query(models.User).filter(models.User.id == f.user_id).first() if f.user_id else None
         res.append(schemas.FarmResponse(
             id=f.id,
+            user_id=f.user_id,
+            user_email=u.email if u else None,
             farmer_name=f.farmer_name,
             location=f.location,
             latitude=f.latitude,
@@ -368,16 +377,46 @@ def create_farm(
     token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
+    CURRENT_STATE["last_allocation"] = None
     current_user = _resolve_user(db, token)
 
-    # Attach the farm to the logged-in farmer when a token is provided
+    user = None
     if current_user and current_user.role != "admin":
-        owner_id = current_user.id
-    else:
+        user = current_user
+    elif farm_in.user_id:
+        user = db.query(models.User).filter(models.User.id == farm_in.user_id).first()
+    if not user:
+        user = db.query(models.User).filter(models.User.name == farm_in.farmer_name).first()
+    if not user:
         user = models.User(name=farm_in.farmer_name, role="farmer")
         db.add(user)
         db.commit()
-        owner_id = user.id
+
+    owner_id = user.id
+
+    # Enforce 1 water request every 3 days rule per farmer
+    now = datetime.datetime.utcnow()
+    three_days_ago = now - datetime.timedelta(days=3)
+
+    if user and user.id:
+        user_farms = db.query(models.Farm).filter(models.Farm.user_id == user.id).all()
+        target_farm_ids = [f.id for f in user_farms]
+        if target_farm_ids:
+            recent_req = (
+                db.query(models.WaterRequirement)
+                .filter(models.WaterRequirement.farm_id.in_(target_farm_ids))
+                .filter(models.WaterRequirement.created_at >= three_days_ago)
+                .order_by(models.WaterRequirement.created_at.desc())
+                .first()
+            )
+            if recent_req:
+                next_eligible = recent_req.created_at + datetime.timedelta(days=3)
+                diff = next_eligible - now
+                hours_rem = round(max(diff.total_seconds() / 3600.0, 0.1), 1)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Panchayat Policy Limit: 1 water request per farmer every 3 days. Last request was submitted on {recent_req.created_at.strftime('%b %d, %H:%M')}. Next eligible request in {hours_rem} hours."
+                )
 
     farm = models.Farm(
         user_id=owner_id,
@@ -546,9 +585,122 @@ def reset_distribution(db: Session = Depends(get_db)):
     log_audit(db, "System", "Distribution", "RESET_DISTRIBUTION", {"message": "Allocation cleared; awaiting next water release"})
     return {"status": "success", "message": "Distribution reset. Add new water or re-run the solver to allocate."}
 
+# --- WATER SOURCE ENDPOINT ---
+@router.post("/water-source/update", response_model=schemas.AllocationResult)
+def update_water_source(update_in: schemas.WaterSourceUpdate, db: Session = Depends(get_db)):
+    """
+    Updates the available canal water supply (liters) and automatically re-runs the OR-Tools linear solver.
+    """
+    new_vol = float(update_in.available_volume_liters)
+    CURRENT_STATE["water_source_available"] = new_vol
+
+    # Update database record
+    source = db.query(models.WaterSource).first()
+    if source:
+        source.available_volume_liters = new_vol
+        source.status = "Scarce" if new_vol < 200000.0 else "Adequate"
+        source.date = datetime.datetime.now(datetime.timezone.utc)
+        db.commit()
+    else:
+        source = models.WaterSource(
+            name="Panchayat Shared Canal #1",
+            total_capacity_liters=300000.0,
+            available_volume_liters=new_vol,
+            status="Scarce" if new_vol < 200000.0 else "Adequate"
+        )
+        db.add(source)
+        db.commit()
+
+    last_v = CURRENT_STATE["last_allocation"].version if CURRENT_STATE.get("last_allocation") else 1
+    new_v = last_v + 1
+    allocation = _run_allocation(db, version=new_v)
+
+    log_audit(db, "WaterSource", str(source.id if source else 1), "UPDATE_CANAL_SUPPLY", {
+        "new_available_liters": new_vol,
+        "new_version": new_v,
+        "is_conflict": allocation.is_conflict,
+        "shortage": allocation.shortage_liters
+    })
+
+    return allocation
+
 # --- MEDIATION & DISPUTE ENDPOINTS ---
+@router.get("/water-request/cooldown")
+def check_water_request_cooldown(farm_id: Optional[int] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """
+    Checks if a farmer/farm is eligible to raise a water request under the '1 request per 3 days' Panchayat policy.
+    """
+    now = datetime.datetime.utcnow()
+    three_days_ago = now - datetime.timedelta(days=3)
+
+    target_farm_ids = []
+    if farm_id:
+        target_farm_ids.append(farm_id)
+        farm = db.query(models.Farm).filter(models.Farm.id == farm_id).first()
+        if farm and farm.user_id:
+            user_farms = db.query(models.Farm).filter(models.Farm.user_id == farm.user_id).all()
+            target_farm_ids = list(set([f.id for f in user_farms]))
+    elif user_id:
+        user_farms = db.query(models.Farm).filter(models.Farm.user_id == user_id).all()
+        target_farm_ids = [f.id for f in user_farms]
+
+    if not target_farm_ids:
+        return {"can_request": True, "message": "Eligible for water request"}
+
+    recent_dispute = (
+        db.query(models.Dispute)
+        .filter(models.Dispute.farm_id.in_(target_farm_ids))
+        .filter(models.Dispute.created_at >= three_days_ago)
+        .order_by(models.Dispute.created_at.desc())
+        .first()
+    )
+
+    if recent_dispute:
+        next_eligible = recent_dispute.created_at + datetime.timedelta(days=3)
+        diff = next_eligible - now
+        hours_remaining = round(max(diff.total_seconds() / 3600.0, 0.1), 1)
+        days_remaining = round(max(diff.total_seconds() / 86400.0, 0.1), 1)
+        
+        return {
+            "can_request": False,
+            "last_request_at": recent_dispute.created_at.isoformat(),
+            "next_eligible_at": next_eligible.isoformat(),
+            "hours_remaining": hours_remaining,
+            "days_remaining": days_remaining,
+            "message": f"Panchayat Policy Limit: 1 water request per farmer every 3 days. You last requested water on {recent_dispute.created_at.strftime('%b %d, %H:%M')}. Next request eligible in {hours_remaining} hours ({days_remaining} days)."
+        }
+
+    return {"can_request": True, "message": "Eligible for water request"}
+
 @router.post("/mediation/propose", response_model=schemas.MediationProposalResponse)
 def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends(get_db)):
+    now = datetime.datetime.utcnow()
+    three_days_ago = now - datetime.timedelta(days=3)
+
+    target_farm = db.query(models.Farm).filter(models.Farm.id == objection.farm_id).first()
+    target_farm_ids = [objection.farm_id]
+    if target_farm and target_farm.user_id:
+        user_farms = db.query(models.Farm).filter(models.Farm.user_id == target_farm.user_id).all()
+        target_farm_ids = list(set([f.id for f in user_farms]))
+
+    # Enforce 1 request every 3 days per farmer
+    recent_dispute = (
+        db.query(models.Dispute)
+        .filter(models.Dispute.farm_id.in_(target_farm_ids))
+        .filter(models.Dispute.created_at >= three_days_ago)
+        .order_by(models.Dispute.created_at.desc())
+        .first()
+    )
+
+    if recent_dispute:
+        next_eligible = recent_dispute.created_at + datetime.timedelta(days=3)
+        diff = next_eligible - now
+        hours_rem = round(max(diff.total_seconds() / 3600.0, 0.1), 1)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Panchayat Policy Limit: 1 water request allowed per farmer every 3 days. Last request was on {recent_dispute.created_at.strftime('%b %d, %H:%M')}. Next request eligible in {hours_rem} hours."
+        )
+
     current_alloc = CURRENT_STATE["last_allocation"]
     if not current_alloc:
         current_alloc = _run_allocation(db, version=1)
@@ -567,6 +719,17 @@ def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends
         cycle_number=CURRENT_STATE["cycle_number"],
     )
 
+    # Save dispute record in DB to enforce 3-day policy for future requests
+    new_dispute = models.Dispute(
+        farm_id=objection.farm_id,
+        objection_text=objection.objection_reason,
+        requested_additional_liters=objection.requested_additional_liters,
+        status="Mediated",
+        created_at=now
+    )
+    db.add(new_dispute)
+    db.commit()
+
     CURRENT_STATE["last_allocation"] = proposal.revised_allocation
     CURRENT_STATE["accepted_version"] = None  # new version pending acceptance
     log_audit(db, "Dispute", str(objection.farm_id), "AI_MEDIATION_PROPOSAL", {
@@ -574,21 +737,40 @@ def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends
         "objection": objection.objection_reason,
         "validated": proposal.is_validated_by_optimizer,
         "status": proposal.status,
+        "dispute_id": new_dispute.id
     })
     return proposal
 
 @router.post("/agreements/accept")
-def accept_agreement(version: int = 1, db: Session = Depends(get_db)):
+def accept_agreement(version: int = 1, farm_id: Optional[int] = None, db: Session = Depends(get_db)):
     agreement = models.Agreement(allocation_version=version, status="Accepted")
     db.add(agreement)
     db.commit()
     CURRENT_STATE["accepted_version"] = version
     if CURRENT_STATE.get("last_allocation") is not None and CURRENT_STATE["last_allocation"].version == version:
         CURRENT_STATE["last_allocation"].is_accepted = True
-    log_audit(db, "Agreement", f"v{version}", "ACCEPT_FINAL_AGREEMENT", {"status": "Accepted", "accepted_at": get_utc_now_iso()})
+    log_audit(db, "Agreement", str(farm_id) if farm_id else f"v{version}", "ACCEPT_FINAL_AGREEMENT", {
+        "status": "Accepted",
+        "farm_id": farm_id,
+        "version": version,
+        "accepted_at": get_utc_now_iso()
+    })
     return {"status": "success", "message": f"Allocation Version {version} Accepted and Saved to Immutable Audit Log!"}
 
 # --- AUDIT LOGS ENDPOINT ---
 @router.get("/audit")
 def get_audit_trail(db: Session = Depends(get_db)):
-    return CURRENT_STATE["audit_logs"]
+    db_logs = db.query(models.AuditLog).order_by(models.AuditLog.id.desc()).all()
+    res = []
+    for log in db_logs:
+        res.append({
+            "id": log.id,
+            "entity_type": log.entity_type,
+            "entity_id": log.entity_id,
+            "action": log.action,
+            "details": log.details,
+            "timestamp": log.created_at.isoformat() if hasattr(log, 'created_at') and log.created_at else datetime.datetime.utcnow().isoformat()
+        })
+    if not res and CURRENT_STATE.get("audit_logs"):
+        return CURRENT_STATE["audit_logs"]
+    return res

@@ -138,6 +138,7 @@ export default function Home() {
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAccepted, setIsAccepted] = useState<boolean>(false);
+  const [acceptedFarmIds, setAcceptedFarmIds] = useState<number[]>([]);
 
   // Modals
   const [whyItem, setWhyItem] = useState<AllocationItem | null>(null);
@@ -194,6 +195,29 @@ export default function Home() {
     setAuthUser(null);
     localStorage.removeItem('paani_user');
   };
+
+  // Automatically bind selectedFarmId to logged in user's farm
+  React.useEffect(() => {
+    if (authUser && allocation && allocation.allocations.length > 0) {
+      const matched = allocation.allocations.find(a => {
+        if (a.user_id && authUser.user_id && a.user_id === authUser.user_id) return true;
+        if (a.user_email && authUser.email && a.user_email.toLowerCase().trim() === authUser.email.toLowerCase().trim()) return true;
+        const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const userEmailPrefix = authUser.email ? cleanString(authUser.email.split('@')[0]) : '';
+        const cleanUserName = authUser.name ? cleanString(authUser.name) : '';
+        const cleanItemOwner = cleanString(a.farmer_name);
+        if (cleanUserName && cleanUserName.length > 3 && cleanItemOwner.includes(cleanUserName)) return true;
+        if (userEmailPrefix && userEmailPrefix.length > 2 && cleanItemOwner.includes(userEmailPrefix)) return true;
+        return false;
+      });
+
+      if (matched) {
+        setSelectedFarmId(matched.farm_id);
+      } else if (allocation.allocations.length > 0) {
+        setSelectedFarmId(allocation.allocations[0].farm_id);
+      }
+    }
+  }, [authUser, allocation]);
 
   // Fetch initial backend state if online. Pass a token to scope farms to the logged-in user.
   const refreshBackendData = async (token?: string) => {
@@ -381,15 +405,22 @@ export default function Home() {
         setIsAccepted(false); // new version needs fresh acceptance
         await refreshBackendData();
         return proposal;
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Water request limit reached.");
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      if (e.message && e.message.includes("Panchayat Policy Limit")) {
+        throw e;
+      }
+      console.log("API offline, running local fallback mediation proposal", e);
     }
 
     // Local fallback mediation proposal calculation if API is offline
     if (allocation) {
-      const targetItem = allocation.allocations.find(a => a.farm_id === farmId) || allocation.allocations[1];
-      const newAllocations = allocation.allocations.map(a => {
+      const currentAlloc = allocation;
+      const targetItem = currentAlloc.allocations.find(a => a.farm_id === farmId) || currentAlloc.allocations[1];
+      const newAllocations = currentAlloc.allocations.map(a => {
         if (a.farm_id === farmId) {
           return {
             ...a,
@@ -409,8 +440,8 @@ export default function Home() {
       });
 
       const revised: AllocationResult = {
-        ...allocation,
-        version: allocation.version + 1,
+        ...currentAlloc,
+        version: currentAlloc.version + 1,
         allocations: newAllocations
       };
 
@@ -431,23 +462,69 @@ export default function Home() {
     return null;
   };
 
-  // Accept Allocation (persisted server-side so it survives reloads)
-  const handleAcceptAllocation = async (version: number) => {
-    setIsAccepted(true);
+  // Accept Allocation (Overall or per Farm)
+  const handleAcceptAllocation = async (version: number, farmId?: number) => {
+    if (farmId) {
+      setAcceptedFarmIds(prev => Array.from(new Set([...prev, farmId])));
+    } else {
+      setIsAccepted(true);
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/agreements/accept?version=${version}`, { method: 'POST' });
-      if (!res.ok) setIsAccepted(false);
+      const res = await fetch(`${API_BASE}/agreements/accept?version=${version}${farmId ? `&farm_id=${farmId}` : ''}`, { method: 'POST' });
+      if (!res.ok && !farmId) {
+        setIsAccepted(false);
+      }
       await refreshBackendData();
     } catch {
       console.log('Failed to register accepted agreement');
-      setIsAccepted(false);
+      if (!farmId) setIsAccepted(false);
+    }
+  };
+
+  // Update Water Supply in Admin
+  const handleUpdateWaterSupply = async (newSupplyLiters: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/water-source/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ available_volume_liters: newSupplyLiters })
+      });
+      if (res.ok) {
+        const updatedAlloc = await res.json();
+        setAllocation(updatedAlloc);
+        const auditRes = await fetch(`${API_BASE}/audit`);
+        if (auditRes.ok) {
+          const auditData = await auditRes.json();
+          setAuditLogs(auditData);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to update water supply:", e);
+      if (allocation) {
+        setAllocation({
+          ...allocation,
+          available_volume_liters: newSupplyLiters,
+          shortage_liters: Math.max(allocation.total_demand_liters - newSupplyLiters, 0),
+          is_conflict: allocation.total_demand_liters > newSupplyLiters,
+          version: allocation.version + 1
+        });
+      }
     }
   };
 
   // Add New Farm (token in URL so the farm attaches to the logged-in farmer)
   const handleAddFarm = async (farmData: FarmFormData) => {
     try {
-      const payload = { ...farmData };
+      const ownerName = authUser?.name ? authUser.name.split('(')[0].trim() : 'Farmer';
+      const farmTitle = farmData.farmer_name || 'New Plot';
+      const formattedFarmerName = `${ownerName} (${farmTitle})`;
+
+      const payload = {
+        ...farmData,
+        farmer_name: formattedFarmerName,
+        user_id: authUser?.user_id || undefined
+      };
       const res = await fetch(authUrl('/farms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -459,9 +536,13 @@ export default function Home() {
         if (newFarm && newFarm.id) {
           setSelectedFarmId(newFarm.id);
         }
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Failed to submit water request. 1 request allowed per farmer every 3 days.");
       }
-    } catch {
-      console.error("Failed to register farm");
+    } catch (e: unknown) {
+      console.error("Water request error:", e);
+      throw e;
     }
   };
 
@@ -506,6 +587,8 @@ export default function Home() {
             onAcceptAllocation={handleAcceptAllocation}
             onOpenAddFarmModal={() => setShowAddFarmModal(true)}
             isAccepted={isAccepted}
+            acceptedFarmIds={acceptedFarmIds}
+            authUser={authUser}
           />
         ) : (
           <AdminDashboard
@@ -515,6 +598,10 @@ export default function Home() {
             onReleaseWater={handleNewWaterCycle}
             onResetDistribution={handleResetDistribution}
             isLoading={isLoading}
+            onAcceptAllocation={handleAcceptAllocation}
+            onUpdateWaterSupply={handleUpdateWaterSupply}
+            isAccepted={isAccepted}
+            acceptedFarmIds={acceptedFarmIds}
           />
         )}
       </main>

@@ -34,16 +34,20 @@ export const MediationChat: React.FC<MediationChatProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [proposal, setProposal] = useState<MediationProposalResponse | null>(null);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleSendObjection = async () => {
     if (!objectionText.trim()) return;
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
       const res = await onSubmitObjection(defaultFarmId, defaultFarmerName, objectionText);
       if (res) {
         setProposal(res);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setErrorMessage(err?.message || "Could not submit water request. Please check Panchayat policy rules.");
     } finally {
       setIsSubmitting(false);
     }
@@ -102,6 +106,12 @@ export const MediationChat: React.FC<MediationChatProps> = ({
               
               {!proposal ? (
                 <div className="space-y-3">
+                  {errorMessage && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-start space-x-2">
+                      <ShieldAlert className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                      <span>{errorMessage}</span>
+                    </div>
+                  )}
                   <textarea
                     value={objectionText}
                     onChange={(e) => setObjectionText(e.target.value)}

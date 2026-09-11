@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { AllocationResult, Farm, AllocationItem } from '../types';
-import { Droplets, Calendar, Clock, AlertTriangle, CheckCircle2, HelpCircle, MessageSquarePlus, ChevronRight, Sprout, Sun, Home, User, MessageSquare } from 'lucide-react';
+import { AllocationResult, Farm, AllocationItem, AuthUser } from '../types';
+import { Droplets, Calendar, Clock, AlertTriangle, Scale, CheckCircle2, HelpCircle, MessageSquarePlus, ChevronRight, Sprout, Sun, CloudRain, ShieldCheck, Home, User, BarChart2, MessageSquare, Check, ArrowRight } from 'lucide-react';
 
 interface FarmerDashboardProps {
   allocation: AllocationResult | null;
@@ -12,9 +12,11 @@ interface FarmerDashboardProps {
   setSelectedFarmId: (id: number) => void;
   onOpenWhyModal: (item: AllocationItem) => void;
   onOpenObjectionModal: (item: AllocationItem) => void;
-  onAcceptAllocation: (version: number) => void;
+  onAcceptAllocation: (version: number, farmId?: number) => void;
   onOpenAddFarmModal: () => void;
   isAccepted: boolean;
+  acceptedFarmIds?: number[];
+  authUser?: AuthUser | null;
 }
 
 export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
@@ -25,10 +27,24 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   onOpenObjectionModal,
   onAcceptAllocation,
   onOpenAddFarmModal,
-  isAccepted
+  isAccepted,
+  acceptedFarmIds = [],
+  authUser
 }) => {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'home' | 'farm' | 'water' | 'mediation' | 'profile'>('home');
+  const [cooldown, setCooldown] = useState<{ can_request: boolean; message?: string; hours_remaining?: number; days_remaining?: number } | null>(null);
+
+  const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
+
+  React.useEffect(() => {
+    if (selectedFarmId) {
+      fetch(`${API_BASE}/water-request/cooldown?farm_id=${selectedFarmId}${authUser?.user_id ? `&user_id=${authUser.user_id}` : ''}`)
+        .then(res => res.json())
+        .then(data => setCooldown(data))
+        .catch(err => console.log(err));
+    }
+  }, [selectedFarmId, authUser]);
 
   if (!allocation || !allocation.allocations || allocation.allocations.length === 0) {
     return (
@@ -40,8 +56,85 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
     );
   }
 
+  // Helper to match farmer allocations strictly to logged in user profile by user_id or email
+  const matchFarmerAllocation = (item: AllocationItem, user: AuthUser | null | undefined) => {
+    if (!user) return true;
+
+    // 1. Direct user_id match
+    if (item.user_id && user.user_id && item.user_id === user.user_id) {
+      return true;
+    }
+
+    // 2. Direct email match
+    const userEmail = user.email ? user.email.toLowerCase().trim() : '';
+    const itemEmail = item.user_email ? item.user_email.toLowerCase().trim() : '';
+    if (itemEmail && userEmail && itemEmail === userEmail) {
+      return true;
+    }
+
+    // 3. Email handle prefix match (e.g. "ramesh@paanipanchayat.org" matches "Ramesh (Farm A)")
+    const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanEmailPrefix = userEmail ? cleanString(userEmail.split('@')[0]) : '';
+    const cleanItemOwner = cleanString(item.farmer_name);
+
+    if (cleanEmailPrefix && cleanEmailPrefix.length > 2 && cleanItemOwner.includes(cleanEmailPrefix)) {
+      return true;
+    }
+
+    // 4. Full user name containment match (e.g. user.name === "Ramesh")
+    const cleanUserName = cleanString(user.name || '');
+    if (cleanUserName && cleanUserName.length > 3 && cleanItemOwner.includes(cleanUserName)) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Filter allocations to strictly show ONLY lands belonging to this logged-in farmer profile
+  const myAllocations = allocation.allocations.filter(a => matchFarmerAllocation(a, authUser));
+
+  // Show ONLY the latest active request for the farmer profile, hiding older requests from view (while keeping in DB)
+  const displayedAllocations = myAllocations.length > 0 ? [myAllocations[myAllocations.length - 1]] : [];
+
   // Active farm selected dynamically in Farmer view
-  const currentAllocationItem = allocation.allocations.find(a => a.farm_id === selectedFarmId) || allocation.allocations[0];
+  const currentAllocationItem = displayedAllocations.find(a => a.farm_id === selectedFarmId) || displayedAllocations[0];
+  const activeFarm = currentAllocationItem ? farms.find(f => f.id === currentAllocationItem.farm_id) : undefined;
+
+  const farmerGreetingName = authUser?.name || (currentAllocationItem ? currentAllocationItem.farmer_name : 'Farmer');
+
+  // If logged in farmer has no registered farms in their profile yet
+  if (displayedAllocations.length === 0 || !currentAllocationItem) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-900">
+        <div className="bg-emerald-700 text-white p-6 rounded-3xl shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-xl font-extrabold text-white">Welcome, {farmerGreetingName}</h2>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-100 font-semibold">
+                Farmer Profile Active
+              </span>
+            </div>
+            <p className="text-xs text-emerald-100 mt-1">No active water request found for profile: {authUser?.email}</p>
+          </div>
+          <button
+            onClick={onOpenAddFarmModal}
+            className="px-5 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-md flex items-center space-x-1.5"
+          >
+            <Droplets className="h-4 w-4 text-emerald-700" />
+            <span>💧 Create Water Request</span>
+          </button>
+        </div>
+
+        <div className="bg-white p-8 rounded-3xl border border-emerald-100 text-center shadow-sm space-y-3">
+          <Droplets className="h-12 w-12 text-emerald-600 mx-auto animate-pulse" />
+          <h3 className="text-lg font-bold text-slate-900">No Active Water Request</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            You are logged in as <strong>{authUser?.name}</strong>. Click <strong>&quot;💧 Create Water Request&quot;</strong> above to submit your crop stage and land details for OR-Tools canal allocation.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const reqLiters = currentAllocationItem.required_liters;
   const allocLiters = currentAllocationItem.allocated_liters;
@@ -49,7 +142,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-900">
-      
+
       {/* 3. Farmer Dashboard Header Card (Ref UI Screen 3) */}
       <div className="bg-emerald-700 text-white p-6 rounded-3xl shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
@@ -61,14 +154,14 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <h2 className="text-xl font-extrabold text-white">
-                {language === 'mr' ? `नमस्कार, ${currentAllocationItem.farmer_name}` : language === 'hi' ? `नमस्ते, ${currentAllocationItem.farmer_name}` : `Welcome, ${currentAllocationItem.farmer_name}`}
+                {language === 'mr' ? `नमस्कार, ${farmerGreetingName}` : language === 'hi' ? `नमस्ते, ${farmerGreetingName}` : `Welcome, ${farmerGreetingName}`}
               </h2>
               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-100 font-semibold">
                 {currentAllocationItem.crop_name} ({currentAllocationItem.area_acres} Acres)
               </span>
             </div>
             <p className="text-xs text-emerald-100 mt-0.5">
-              {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Farm details and water allocations are active below.'}
+              Active Request: <strong>{currentAllocationItem.farmer_name}</strong> — {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Active water request and allocations below.'}
             </p>
           </div>
         </div>
@@ -78,7 +171,8 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
             onClick={onOpenAddFarmModal}
             className="px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-sm flex items-center space-x-1.5"
           >
-            <span>+ Add Farm</span>
+            <Droplets className="h-4 w-4 text-emerald-700" />
+            <span>💧 Create Water Request</span>
           </button>
         </div>
       </div>      {/* Farm Switcher Tabs when multiple farms exist */}
@@ -101,10 +195,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
         </div>
       )}
 
-      {/* Main Grid: Water Requirement Details & Conflict Status (Screens 4 & 5) */}
+      {/* Main Grid: Water Requirement Details & Allocation Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* 4. Water Requirement Details Card (Ref UI Screen 4) */}
+        {/* 4. Water Requirement Details Card */}
         <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
@@ -125,7 +219,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
             </div>
           </div>
 
-          {/* Breakdown Factor Adjustments (Screen 4 Layout) */}
+          {/* Breakdown Factor Adjustments */}
           <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs my-4">
             <div className="p-2.5 bg-white rounded-xl border border-slate-100">
               <span className="text-[10px] text-slate-500 font-bold uppercase block">{t('base')}</span>
@@ -149,14 +243,13 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </button>
         </div>
 
-        {/* 5. Shared Water & Conflict Detection (Ref UI Screen 5) */}
-        <div className="bg-white p-6 rounded-3xl border border-rose-200 shadow-sm relative">
-          
-          {/* Conflict Banner Header */}
+        {/* 5. Allocation & Schedule Summary (Cleaned - Conflict Alert Removed) */}
+        <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm relative flex flex-col justify-between">
+
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 flex items-center gap-1.5">
-              <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
-              <span>{t('waterSituationTitle')}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              <span>सिंचन वाटप (Allocated Water)</span>
             </span>
             <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
               v{allocation.version}
@@ -164,23 +257,24 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </div>
 
           {/* Shortage Stats Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center p-3 bg-rose-50/50 rounded-2xl border border-rose-100 my-3">
-            <div>
-              <span className="text-[10px] text-slate-500 font-bold block">{t('totalDemand')}</span>
-              <span className="text-sm sm:text-base font-extrabold text-slate-900">{allocation.total_demand_liters.toLocaleString()} L</span>
+          {allocation.shortage_liters > 0 && (
+            <div className="grid grid-cols-3 gap-2 text-center p-3 bg-rose-50/50 rounded-2xl border border-rose-100 my-2">
+              <div>
+                <span className="text-[10px] text-slate-500 font-bold block">{t('totalDemand')}</span>
+                <span className="text-sm sm:text-base font-extrabold text-slate-900">{allocation.total_demand_liters.toLocaleString()} L</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-blue-600 font-bold block">{t('availableSupply')}</span>
+                <span className="text-sm sm:text-base font-extrabold text-blue-700">{allocation.available_volume_liters.toLocaleString()} L</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-rose-600 font-bold block">{t('waterShortage')}</span>
+                <span className="text-sm sm:text-base font-extrabold text-rose-600">{allocation.shortage_liters.toLocaleString()} L</span>
+              </div>
             </div>
-            <div>
-              <span className="text-[10px] text-blue-600 font-bold block">{t('availableSupply')}</span>
-              <span className="text-sm sm:text-base font-extrabold text-blue-700">{allocation.available_volume_liters.toLocaleString()} L</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-rose-600 font-bold block">{t('waterShortage')}</span>
-              <span className="text-sm sm:text-base font-extrabold text-rose-600">{allocation.shortage_liters.toLocaleString()} L</span>
-            </div>
-          </div>
-
+          )}
           {/* Outcome Allocation Summary */}
-          <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 mt-3">
+          <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 my-auto">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[11px] text-emerald-800 font-bold uppercase tracking-wider">{t('yourAllocation')}</span>
@@ -195,12 +289,12 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               </div>
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-emerald-200/70 flex items-center justify-between text-xs text-slate-700">
+            <div className="mt-4 pt-3 border-t border-emerald-200/70 flex items-center justify-between text-xs text-slate-700">
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-emerald-600" />
                 <span><strong>{t('timeSlot')}:</strong> {currentAllocationItem.schedule_start} – {currentAllocationItem.schedule_end}</span>
               </div>
-              <span className="px-2 py-0.5 rounded bg-white text-emerald-800 font-mono text-[10px] border border-emerald-200">Canal Turn</span>
+              <span className="px-2.5 py-1 rounded bg-white text-emerald-800 font-mono text-[10px] border border-emerald-200 font-bold">Canal Turn Active</span>
             </div>
           </div>
 
@@ -208,9 +302,9 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
       </div>
 
-      {/* 6 & 8. Allocation Matrix Table for Logged-In Farmer Only */}
+      {/* 6 & 8. Allocation Matrix Table - Showing All Farms of Logged-In Farmer */}
       <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm space-y-4">
-        
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
             <div className="flex items-center space-x-2">
@@ -219,7 +313,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
                 OR-Tools Verified
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">Showing verified allocation for logged-in farmer account.</p>
+            <p className="text-xs text-slate-500 mt-0.5">Showing all registered farm parcels and water allocations for your account.</p>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -229,7 +323,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </div>
         </div>
 
-        {/* Allocations Table - Logged In Farmer Only */}
+        {/* Allocations Table - All Farms of Logged-In Farmer */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-800">
             <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
@@ -243,23 +337,34 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              <tr className="bg-emerald-50/50 font-semibold border-l-4 border-emerald-600">
-                <td className="p-3 font-bold text-slate-900 flex items-center space-x-2">
-                  <span>👨‍🌾 {currentAllocationItem.farmer_name}</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-bold">Active</span>
-                </td>
-                <td className="p-3 text-slate-700">
-                  {currentAllocationItem.crop_name} <span className="text-[10px] text-emerald-700">({currentAllocationItem.growth_stage})</span>
-                </td>
-                <td className="p-3 font-mono text-slate-600">{currentAllocationItem.required_liters.toLocaleString()} L</td>
-                <td className="p-3 font-bold text-emerald-700 font-mono">{currentAllocationItem.allocated_liters.toLocaleString()} L</td>
-                <td className="p-3 text-rose-600 font-mono">{currentAllocationItem.unmet_liters.toLocaleString()} L</td>
-                <td className="p-3 text-right">
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
-                    {currentAllocationItem.fairness_score}/100
-                  </span>
-                </td>
-              </tr>
+              {displayedAllocations.map((item, idx) => (
+                <tr
+                  key={item.farm_id || idx}
+                  onClick={() => setSelectedFarmId(item.farm_id)}
+                  className={`cursor-pointer transition-colors ${item.farm_id === selectedFarmId
+                      ? 'bg-emerald-50/70 font-semibold border-l-4 border-emerald-600'
+                      : 'hover:bg-slate-50'
+                    }`}
+                >
+                  <td className="p-3 font-bold text-slate-900 flex items-center space-x-2">
+                    <span>🌾 {item.farmer_name}</span>
+                    {item.farm_id === selectedFarmId && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-bold">Active</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-slate-700">
+                    {item.crop_name} <span className="text-[10px] text-emerald-700">({item.growth_stage} — {item.area_acres} Acres)</span>
+                  </td>
+                  <td className="p-3 font-mono text-slate-600">{item.required_liters.toLocaleString()} L</td>
+                  <td className="p-3 font-bold text-emerald-700 font-mono">{item.allocated_liters.toLocaleString()} L</td>
+                  <td className="p-3 text-rose-600 font-mono">{item.unmet_liters.toLocaleString()} L</td>
+                  <td className="p-3 text-right">
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                      {item.fairness_score}/100
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -317,13 +422,24 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </div>
           <div>              <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">Agreement Status</span>
             <h4 className="text-base font-extrabold text-slate-900 flex items-center space-x-2">
-              <span>{isAccepted ? (language === 'mr' ? '✓ अंतिम करार पूर्ण' : language === 'hi' ? '✓ अंतिम समझौता पूर्ण' : '✓ Final Agreement Accepted') : (language === 'mr' ? 'प्रस्तावित वाटप तयार आहे' : language === 'hi' ? 'प्रस्तावित आवंटन तैयार है' : 'Proposed Allocation Pending Confirmation')}</span>
+              <span>
+                {isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id)
+                  ? (language === 'mr' ? '✓ अंतिम करार पूर्ण (Accepted)' : language === 'hi' ? '✓ अंतिम समझौता पूर्ण (Accepted)' : '✓ Final Agreement Accepted')
+                  : (language === 'mr' ? 'प्रस्तावित वाटप तयार आहे (Pending Confirmation)' : language === 'hi' ? 'प्रस्तावित आवंटन तैयार है (Pending Confirmation)' : 'Proposed Allocation Pending Confirmation')}
+              </span>
             </h4>
             <p className="text-xs text-slate-500 mt-0.5">OR-Tools hard constraints verified with transparent AI audit log.</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+          {cooldown && !cooldown.can_request && (
+            <div className="text-[11px] font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center space-x-1.5">
+              <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <span>3-Day Policy Cooldown ({cooldown.hours_remaining}h left)</span>
+            </div>
+          )}
+
           <button
             onClick={() => onOpenObjectionModal(currentAllocationItem)}
             className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5"
@@ -333,16 +449,15 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </button>
 
           <button
-            onClick={() => onAcceptAllocation(allocation.version)}
-            disabled={isAccepted}
-            className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5 ${
-              isAccepted
+            onClick={() => onAcceptAllocation(allocation.version, currentAllocationItem.farm_id)}
+            disabled={isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id)}
+            className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5 ${isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id)
                 ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
+              }`}
           >
             <CheckCircle2 className="h-4 w-4" />
-            <span>{isAccepted ? 'Accepted ✅' : t('acceptAllocation')}</span>
+            <span>{isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id) ? 'Accepted ✅' : t('acceptAllocation')}</span>
           </button>
         </div>
       </div>

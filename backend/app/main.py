@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import router, reset_demo_data
 from app.database import SessionLocal, Base, engine
+from app import models
 
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
@@ -12,9 +13,11 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
-        # Seed demo data on initial startup
-        reset_demo_data(db)
-        print("[SUCCESS] PaaniPanchayat Backend Initialized with 4 Demo Farms!")
+        if db.query(models.User).count() == 0:
+            reset_demo_data(db)
+            print("[SUCCESS] PaaniPanchayat Backend Initialized with Demo Farms!")
+        else:
+            print("[INFO] PaaniPanchayat Backend loaded existing database records.")
     finally:
         db.close()
     yield
@@ -47,4 +50,5 @@ def root():
     }
 
 if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
