@@ -144,34 +144,34 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
     <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-900">
 
       {/* 3. Farmer Dashboard Header Card (Ref UI Screen 3) */}
-      <div className="bg-emerald-700 text-white p-6 rounded-3xl shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div className="h-12 w-12 rounded-2xl bg-white/20 p-0.5 flex items-center justify-center shrink-0">
+      <div className="bg-emerald-700 text-white p-4 sm:p-6 rounded-3xl shadow-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-white/20 p-0.5 flex items-center justify-center shrink-0">
             <div className="h-full w-full bg-white rounded-[14px] flex items-center justify-center">
-              <Sprout className="h-6 w-6 text-emerald-700" />
+              <Sprout className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-700" />
             </div>
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-xl font-extrabold text-white">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg sm:text-xl font-extrabold text-white truncate">
                 {language === 'mr' ? `नमस्कार, ${farmerGreetingName}` : language === 'hi' ? `नमस्ते, ${farmerGreetingName}` : `Welcome, ${farmerGreetingName}`}
               </h2>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-100 font-semibold">
+              <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-100 font-semibold shrink-0">
                 {currentAllocationItem.crop_name} ({currentAllocationItem.area_acres} Acres)
               </span>
             </div>
-            <p className="text-xs text-emerald-100 mt-0.5">
+            <p className="text-xs text-emerald-100 mt-0.5 truncate">
               Active Request: <strong>{currentAllocationItem.farmer_name}</strong> — {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Active water request and allocations below.'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 w-full md:w-auto justify-end">
+        <div className="flex items-center space-x-2 w-full md:w-auto justify-stretch md:justify-end">
           <button
             onClick={onOpenAddFarmModal}
-            className="px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-sm flex items-center space-x-1.5"
+            className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-sm flex items-center justify-center space-x-1.5"
           >
-            <Droplets className="h-4 w-4 text-emerald-700" />
+            <Droplets className="h-4 w-4 text-emerald-700 shrink-0" />
             <span>💧 Create Water Request</span>
           </button>
         </div>
@@ -324,8 +324,8 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
         </div>
 
         {/* Allocations Table - All Farms of Logged-In Farmer */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-slate-100">
+          <table className="w-full min-w-[600px] text-left text-xs text-slate-800">
             <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
               <tr>
                 <th className="p-3">{t('farmer')}</th>

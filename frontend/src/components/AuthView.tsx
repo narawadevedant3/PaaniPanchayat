@@ -102,6 +102,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         throw new Error(data.detail || 'Registration failed');
       }
 
+<<<<<<< HEAD
       // Automatically sign in newly registered user immediately!
       onLoginSuccess({
         user_id: data.user_id,
@@ -113,6 +114,19 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unable to register account.';
       setErrorMsg(msg);
+=======
+      // On successful registration, pre-fill email, switch to Sign In tab, and show success notification
+      setLoginEmail(regEmail.trim());
+      setLoginPassword('');
+      setRegName('');
+      setRegEmail('');
+      setRegPassword('');
+      setRegContact('');
+      setActiveTab('login');
+      setSuccessMsg('Account registered successfully! Please sign in with your email and password.');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Unable to register account.');
+>>>>>>> origin/pranav
     } finally {
       setIsLoading(false);
     }
@@ -234,8 +248,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
 
         {/* Header Logo */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl shadow-md shadow-emerald-600/30 mb-3">
-            <Droplet className="w-8 h-8 text-white fill-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl shadow-md shadow-emerald-600/30 mb-3 overflow-hidden bg-emerald-600">
+            <img src="/logo.png" alt="PaaniPanchayat Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-wide">PaaniPanchayat</h1>
           <p className="text-xs text-slate-500 mt-1 font-medium">AI-Powered Water Sharing & Dispute Mediation</p>

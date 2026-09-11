@@ -53,30 +53,29 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         
         {/* Brand Logo & Name */}
-        <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-600 p-0.5 shadow-md shadow-emerald-600/20 flex items-center justify-center">
-            <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center">
-              <Droplets className="h-5 w-5 text-emerald-600" />
-            </div>
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 shrink">
+          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-emerald-600 p-0.5 shadow-md shadow-emerald-600/20 flex items-center justify-center overflow-hidden shrink-0">
+            <img src="/logo.png" alt="PaaniPanchayat Logo" className="h-full w-full object-cover rounded-[8px] sm:rounded-[10px]" />
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-extrabold text-xl tracking-tight text-emerald-950">
+          <div className="min-w-0">
+            <div className="flex items-center space-x-1.5">
+              <span className="font-extrabold text-base sm:text-xl tracking-tight text-emerald-950 truncate">
                 {t('appTitle')}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
+              <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200 shrink-0">
                 PWA MVP
               </span>
             </div>
-            <p className="text-xs text-slate-500 hidden sm:block">
+            <p className="text-xs text-slate-500 hidden md:block truncate">
               {t('tagline')}
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
 
+<<<<<<< HEAD
           {/* Demo Scenario Reset Button */}
           <button
             onClick={onResetDemo}
@@ -103,19 +102,34 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
               <span className="flex items-center space-x-1 text-emerald-800">
                 <User className="h-3.5 w-3.5 text-emerald-600" />
                 <span>Farmer View</span>
+=======
+          {/* Active Role Badge */}
+          <div className="flex items-center px-1.5 sm:px-2.5 py-1 bg-emerald-50 rounded-lg border border-emerald-200 text-xs font-semibold">
+            {currentRole === 'admin' ? (
+              <span className="flex items-center space-x-1 text-amber-700">
+                <Scale className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <span className="hidden sm:inline">Panchayat Admin</span>
+                <span className="sm:hidden text-[11px]">Admin</span>
+              </span>
+            ) : (
+              <span className="flex items-center space-x-1 text-emerald-800">
+                <User className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span className="hidden sm:inline">Farmer Portal</span>
+                <span className="sm:hidden text-[11px]">Farmer</span>
+>>>>>>> origin/pranav
               </span>
             )}
           </button>
 
           {/* Language Switcher */}
-          <div className="relative flex items-center bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 text-xs">
-            <Globe className="h-3.5 w-3.5 text-slate-600 mr-1.5" />
+          <div className="relative flex items-center bg-slate-100 px-1.5 sm:px-2 py-1 rounded-lg border border-slate-200 text-xs">
+            <Globe className="h-3.5 w-3.5 text-slate-600 mr-1 shrink-0" />
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as Language)}
-              className="bg-transparent text-slate-800 text-xs font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent text-slate-800 text-xs font-medium focus:outline-none cursor-pointer pr-0"
             >
-              <option value="en" className="bg-white text-slate-900">English</option>
+              <option value="en" className="bg-white text-slate-900">EN</option>
               <option value="hi" className="bg-white text-slate-900">हिंदी</option>
               <option value="mr" className="bg-white text-slate-900">मराठी</option>
             </select>
@@ -124,29 +138,33 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
           {/* PWA Install App Button */}
           <button
             onClick={handleInstallApp}
+<<<<<<< HEAD
             className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium shadow-sm transition ${
               isInstallable ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white'
             }`}
+=======
+            className="flex items-center space-x-1 px-2 py-1.5 sm:px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium shadow-sm transition shrink-0"
+>>>>>>> origin/pranav
             title="Install PWA to Home Screen"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden lg:inline">{t('installApp')}</span>
           </button>
 
           {/* User Profile & Logout */}
           {authUser && (
-            <div className="flex items-center space-x-2 pl-2 border-l border-slate-200">
-              <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-slate-900">{authUser.name}</span>
+            <div className="flex items-center space-x-1.5 pl-1.5 sm:pl-2 border-l border-slate-200 shrink-0">
+              <div className="hidden md:flex flex-col text-right">
+                <span className="text-xs font-bold text-slate-900 truncate max-w-[100px]">{authUser.name}</span>
                 <span className="text-[10px] text-emerald-700 font-semibold capitalize">{authUser.role}</span>
               </div>
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition"
+                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition shrink-0"
                   title="Sign Out"
                 >
-                  <LogOut className="h-3.5 w-3.5" />
+                  <LogOut className="h-3.5 w-3.5 shrink-0" />
                 </button>
               )}
             </div>

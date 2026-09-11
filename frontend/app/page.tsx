@@ -8,7 +8,12 @@ import { MediationChat } from '../src/components/MediationChat';
 import { WhyExplanationModal } from '../src/components/WhyExplanationModal';
 import { FarmRegistrationModal } from '../src/components/FarmRegistrationModal';
 import { AuthView } from '../src/components/AuthView';
+<<<<<<< HEAD
 import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse, AuthUser, FarmFormData, RequirementBreakdown } from '../src/types';
+=======
+import { Footer } from '../src/components/Footer';
+import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse, AuthUser } from '../src/types';
+>>>>>>> origin/pranav
 
 const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
 
@@ -633,9 +638,7 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-emerald-100 bg-white p-4 text-center text-xs text-slate-500 shadow-inner">
-        <p className="font-medium">PaaniPanchayat — AI-Powered Water Sharing & Dispute Mediation Platform for Farmers (PS14 Hackathon MVP)</p>
-      </footer>
+      <Footer />
 
     </div>
   );
