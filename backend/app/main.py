@@ -24,13 +24,20 @@ app.add_middleware(
 
 app.include_router(router)
 
+from app import models
+
 @app.on_event("startup")
 def startup_event():
     db = SessionLocal()
     try:
-        # Seed demo data on initial startup
-        reset_demo_data(db)
-        print("[SUCCESS] PaaniPanchayat Backend Initialized with 4 Demo Farms!")
+        # Seed demo data if database is empty, otherwise preserve persistent records
+        user_count = db.query(models.User).count()
+        farm_count = db.query(models.Farm).count()
+        if user_count == 0 or farm_count == 0:
+            reset_demo_data(db)
+            print("[SUCCESS] PaaniPanchayat Backend Initialized and Seeded with 4 Demo Farms!")
+        else:
+            print(f"[SUCCESS] PaaniPanchayat Backend Initialized with {user_count} users and {farm_count} farms from database.")
     finally:
         db.close()
 

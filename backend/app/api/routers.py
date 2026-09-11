@@ -79,18 +79,18 @@ def register_user(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
 @router.post("/auth/login", response_model=schemas.AuthResponse)
 def login_user(login_in: schemas.UserLogin, db: Session = Depends(get_db)):
     email_clean = login_in.email.lower().strip()
+    # 1. Fetch user record directly from database
     user = db.query(models.User).filter(models.User.email == email_clean).first()
     
-    # Check if user exists or if password matches
-    if not user or not user.hashed_password or not verify_password(login_in.password, user.hashed_password):
-        # Fallback for demo users if unhashed/seeded
-        if user and not user.hashed_password and login_in.password == "password123":
-            pass # allow demo user
-        else:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+    # 2. Check if user exists and verify password against stored hashed password in DB
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    if not user.hashed_password or not verify_password(login_in.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
     token = create_access_token(user.id, user.email, user.role, user.name)
-    log_audit(db, "User", str(user.id), "LOGIN_USER", {"email": user.email, "role": user.role})
+    log_audit(db, "User", str(user.id), "LOGIN_USER", {"email": user.email, "role": user.role, "name": user.name})
     
     return schemas.AuthResponse(
         user_id=user.id,
@@ -243,16 +243,39 @@ def reset_demo_data(db: Session = Depends(get_db)):
     )
     CURRENT_STATE["last_allocation"] = allocation_v1
 
+    # Persist all allocation items in database
+    for alloc_item in allocation_v1.allocations:
+        db_alloc = models.Allocation(
+            water_source_id=source.id,
+            farm_id=alloc_item.farm_id,
+            allocated_volume_liters=alloc_item.allocated_liters,
+            schedule_start=alloc_item.schedule_start,
+            schedule_end=alloc_item.schedule_end,
+            version=1,
+            fairness_score=alloc_item.fairness_score,
+            reasoning="; ".join(alloc_item.reasoning)
+        )
+        db.add(db_alloc)
+
+    # Persist initial Agreement in database
+    init_agreement = models.Agreement(
+        allocation_version=1,
+        status="Pending"
+    )
+    db.add(init_agreement)
+    db.commit()
+
     log_audit(db, "System", "DemoReset", "INITIALIZE_DEMO_SCENARIO", {
         "farms_count": 4,
         "available_water": 180000.0,
         "total_demand": total_demand,
-        "shortage": max(total_demand - 180000.0, 0)
+        "shortage": max(total_demand - 180000.0, 0),
+        "persisted_to_db": True
     })
 
     return {
         "status": "success",
-        "message": "Loaded 4 Demo Farms with 180,000 L Available Water",
+        "message": "Loaded 4 Demo Farms with 180,000 L Available Water and saved to Database",
         "allocation": allocation_v1
     }
 
@@ -282,13 +305,24 @@ def get_farms(db: Session = Depends(get_db)):
 
 @router.post("/farms", response_model=schemas.FarmResponse)
 def create_farm(farm_in: schemas.FarmCreate, db: Session = Depends(get_db)):
-    user = models.User(name=farm_in.farmer_name, role="farmer")
-    db.add(user)
-    db.commit()
+    clean_name = farm_in.farmer_name.strip()
+    user = db.query(models.User).filter(models.User.name == clean_name).first()
+    if not user:
+        clean_slug = clean_name.lower().replace(" ", "").replace("(", "").replace(")", "").replace("-", "")
+        user = models.User(
+            name=clean_name,
+            email=f"{clean_slug}@paanipanchayat.org",
+            hashed_password=hash_password("password123"),
+            role="farmer",
+            language="en"
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     farm = models.Farm(
         user_id=user.id,
-        farmer_name=farm_in.farmer_name,
+        farmer_name=clean_name,
         location=farm_in.location,
         latitude=farm_in.latitude,
         longitude=farm_in.longitude,
@@ -300,6 +334,7 @@ def create_farm(farm_in: schemas.FarmCreate, db: Session = Depends(get_db)):
     )
     db.add(farm)
     db.commit()
+    db.refresh(farm)
 
     crop = models.Crop(
         farm_id=farm.id,
@@ -392,7 +427,30 @@ def generate_allocation_endpoint(db: Session = Depends(get_db)):
 
     allocation = solve_water_allocation(farms_data, available_water_liters=CURRENT_STATE["water_source_available"], version=1)
     CURRENT_STATE["last_allocation"] = allocation
-    log_audit(db, "Allocation", "v1", "GENERATE_INITIAL_ALLOCATION", {"is_conflict": allocation.is_conflict, "shortage": allocation.shortage_liters})
+
+    # Persist solved allocation in database
+    source = db.query(models.WaterSource).first()
+    source_id = source.id if source else 1
+    db.query(models.Allocation).filter(models.Allocation.version == allocation.version).delete()
+    for alloc_item in allocation.allocations:
+        db_alloc = models.Allocation(
+            water_source_id=source_id,
+            farm_id=alloc_item.farm_id,
+            allocated_volume_liters=alloc_item.allocated_liters,
+            schedule_start=alloc_item.schedule_start,
+            schedule_end=alloc_item.schedule_end,
+            version=allocation.version,
+            fairness_score=alloc_item.fairness_score,
+            reasoning="; ".join(alloc_item.reasoning)
+        )
+        db.add(db_alloc)
+    db.commit()
+
+    log_audit(db, "Allocation", f"v{allocation.version}", "GENERATE_INITIAL_ALLOCATION", {
+        "is_conflict": allocation.is_conflict,
+        "shortage": allocation.shortage_liters,
+        "persisted_records": len(allocation.allocations)
+    })
     return allocation
 
 # --- MEDIATION & DISPUTE ENDPOINTS ---
@@ -414,9 +472,50 @@ def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends
     )
 
     CURRENT_STATE["last_allocation"] = proposal.revised_allocation
+
+    # Persist Dispute in database
+    db_dispute = models.Dispute(
+        farm_id=objection.farm_id,
+        objection_text=objection.objection_reason,
+        requested_additional_liters=objection.requested_additional_liters,
+        status="Mediated"
+    )
+    db.add(db_dispute)
+    db.commit()
+    db.refresh(db_dispute)
+
+    # Persist Mediation Session in database
+    session_record = models.MediationSession(
+        dispute_id=db_dispute.id,
+        proposal_text=proposal.proposed_reallocation_text,
+        proposal_json={"analysis": proposal.ai_mediation_analysis},
+        result_status="Validated"
+    )
+    db.add(session_record)
+
+    # Persist Revised Allocations in database
+    source = db.query(models.WaterSource).first()
+    source_id = source.id if source else 1
+    new_version = proposal.revised_allocation.version
+    db.query(models.Allocation).filter(models.Allocation.version == new_version).delete()
+    for alloc_item in proposal.revised_allocation.allocations:
+        revised_alloc = models.Allocation(
+            water_source_id=source_id,
+            farm_id=alloc_item.farm_id,
+            allocated_volume_liters=alloc_item.allocated_liters,
+            schedule_start=alloc_item.schedule_start,
+            schedule_end=alloc_item.schedule_end,
+            version=new_version,
+            fairness_score=alloc_item.fairness_score,
+            reasoning="; ".join(alloc_item.reasoning)
+        )
+        db.add(revised_alloc)
+    db.commit()
+
     log_audit(db, "Dispute", str(objection.farm_id), "AI_MEDIATION_PROPOSAL", {
         "farmer": objection.farmer_name,
         "objection": objection.objection_reason,
+        "version": new_version,
         "validated": proposal.is_validated_by_optimizer
     })
     return proposal
@@ -426,10 +525,27 @@ def accept_agreement(version: int = 1, db: Session = Depends(get_db)):
     agreement = models.Agreement(allocation_version=version, status="Accepted")
     db.add(agreement)
     db.commit()
-    log_audit(db, "Agreement", f"v{version}", "ACCEPT_FINAL_AGREEMENT", {"status": "Accepted", "accepted_at": datetime.datetime.utcnow().isoformat()})
+    log_audit(db, "Agreement", f"v{version}", "ACCEPT_FINAL_AGREEMENT", {
+        "status": "Accepted",
+        "accepted_at": datetime.datetime.utcnow().isoformat()
+    })
     return {"status": "success", "message": f"Allocation Version {version} Accepted and Saved to Immutable Audit Log!"}
 
 # --- AUDIT LOGS ENDPOINT ---
 @router.get("/audit")
 def get_audit_trail(db: Session = Depends(get_db)):
+    # Read persistent audit logs directly from SQLite database
+    logs = db.query(models.AuditLog).order_by(models.AuditLog.id.desc()).limit(100).all()
+    if logs:
+        return [
+            {
+                "id": log.id,
+                "entity_type": log.entity_type,
+                "entity_id": log.entity_id,
+                "action": log.action,
+                "details": log.details,
+                "timestamp": log.timestamp.isoformat() if log.timestamp else datetime.datetime.utcnow().isoformat()
+            }
+            for log in logs
+        ]
     return CURRENT_STATE["audit_logs"]
