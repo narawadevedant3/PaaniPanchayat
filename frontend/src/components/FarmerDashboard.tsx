@@ -12,9 +12,10 @@ interface FarmerDashboardProps {
   setSelectedFarmId: (id: number) => void;
   onOpenWhyModal: (item: AllocationItem) => void;
   onOpenObjectionModal: (item: AllocationItem) => void;
-  onAcceptAllocation: (version: number) => void;
+  onAcceptAllocation: (version: number, farmId?: number) => void;
   onOpenAddFarmModal: () => void;
   isAccepted: boolean;
+  acceptedFarmIds?: number[];
   authUser?: AuthUser | null;
 }
 
@@ -28,6 +29,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   onAcceptAllocation,
   onOpenAddFarmModal,
   isAccepted,
+  acceptedFarmIds = [],
   authUser
 }) => {
   const { t, language } = useLanguage();
@@ -56,9 +58,9 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   const myAllocations = allocation.allocations.filter(a => {
     if (!loggedInFirstName) return true;
     const farmOwnerFirstName = extractPrimaryName(a.farmer_name);
-    return farmOwnerFirstName === loggedInFirstName || 
-           a.farmer_name.toLowerCase().includes(loggedInFirstName) ||
-           a.farm_id === selectedFarmId;
+    return farmOwnerFirstName === loggedInFirstName ||
+      a.farmer_name.toLowerCase().includes(loggedInFirstName) ||
+      a.farm_id === selectedFarmId;
   });
 
   const displayedAllocations = myAllocations.length > 0 ? myAllocations : [allocation.allocations[0]];
@@ -78,7 +80,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-900">
-      
+
       {/* 3. Farmer Dashboard Header Card (Ref UI Screen 3) */}
       <div className="bg-emerald-700 text-white p-6 rounded-3xl shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
@@ -162,7 +164,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
         {/* 5. Allocation & Schedule Summary (Cleaned - Conflict Alert Removed) */}
         <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm relative flex flex-col justify-between">
-          
+
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
@@ -204,7 +206,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
       {/* 6 & 8. Allocation Matrix Table - Showing All Farms of Logged-In Farmer */}
       <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm space-y-4">
-        
+
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
             <div className="flex items-center space-x-2">
@@ -241,11 +243,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
                 <tr
                   key={item.farm_id || idx}
                   onClick={() => setSelectedFarmId(item.farm_id)}
-                  className={`cursor-pointer transition-colors ${
-                    item.farm_id === selectedFarmId
+                  className={`cursor-pointer transition-colors ${item.farm_id === selectedFarmId
                       ? 'bg-emerald-50/70 font-semibold border-l-4 border-emerald-600'
                       : 'hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <td className="p-3 font-bold text-slate-900 flex items-center space-x-2">
                     <span>🌾 {item.farmer_name}</span>
@@ -319,7 +320,11 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           <div>
             <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">Agreement Status</span>
             <h4 className="text-base font-extrabold text-slate-900 flex items-center space-x-2">
-              <span>{isAccepted ? '✓ अंतिम करार पूर्ण (Accepted)' : 'प्रस्तावित वाटप तयार आहे (Pending Final Confirmation)'}</span>
+              <span>
+                {isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id)
+                  ? '✓ अंतिम करार पूर्ण (Accepted)'
+                  : 'प्रस्तावित वाटप तयार आहे (Pending Final Confirmation)'}
+              </span>
             </h4>
             <p className="text-xs text-slate-500 mt-0.5">OR-Tools hard constraints verified with transparent AI audit log.</p>
           </div>
@@ -335,16 +340,15 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </button>
 
           <button
-            onClick={() => onAcceptAllocation(allocation.version)}
-            disabled={isAccepted}
-            className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5 ${
-              isAccepted
+            onClick={() => onAcceptAllocation(allocation.version, currentAllocationItem.farm_id)}
+            disabled={isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id)}
+            className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5 ${isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id)
                 ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                 : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
+              }`}
           >
             <CheckCircle2 className="h-4 w-4" />
-            <span>{isAccepted ? 'Accepted ✅' : t('acceptAllocation')}</span>
+            <span>{isAccepted || acceptedFarmIds.includes(currentAllocationItem.farm_id) ? 'Accepted ✅' : t('acceptAllocation')}</span>
           </button>
         </div>
       </div>

@@ -11,7 +11,7 @@ interface AuthViewProps {
 
 export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  
+
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -140,13 +140,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#f2f6f4] p-4 sm:p-6 lg:p-8 font-sans relative overflow-hidden">
-      
+
       {/* Background visual graphics */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-100/50 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md bg-white border border-emerald-100 shadow-xl rounded-3xl p-6 sm:p-8 relative z-10 text-slate-800">
-        
+
         {/* Header Logo */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl shadow-md shadow-emerald-600/30 mb-3">
@@ -161,22 +161,20 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
           <button
             type="button"
             onClick={() => { setActiveTab('login'); setErrorMsg(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'login'
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'login'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             Sign In
           </button>
           <button
             type="button"
             onClick={() => { setActiveTab('register'); setErrorMsg(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-              activeTab === 'register'
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'register'
                 ? 'bg-emerald-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             Register
           </button>

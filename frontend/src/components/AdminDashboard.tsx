@@ -10,11 +10,21 @@ interface AdminDashboardProps {
   allocation: AllocationResult | null;
   auditLogs: AuditLogItem[];
   onTriggerReallocation: () => void;
+  onAcceptAllocation?: (version: number, farmId?: number) => void;
+  isAccepted?: boolean;
+  acceptedFarmIds?: number[];
 }
 
 const COLORS = ['#059669', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, auditLogs, onTriggerReallocation }) => {
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  allocation,
+  auditLogs,
+  onTriggerReallocation,
+  onAcceptAllocation,
+  isAccepted = false,
+  acceptedFarmIds = []
+}) => {
   const { t } = useLanguage();
 
   if (!allocation) {
@@ -24,6 +34,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
       </div>
     );
   }
+
+  // Filter dispute audit logs
+  const disputeLogs = auditLogs.filter(
+    log => log.entity_type === 'Dispute' || log.action.includes('MEDIATION') || log.action.includes('OBJECTION')
+  );
 
   const chartData = allocation.allocations.map(a => ({
     name: a.farmer_name.split(' ')[0],
@@ -47,21 +62,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
             <Scale className="h-6 w-6 text-amber-600" />
             <h2 className="text-2xl font-black text-slate-900">{t('adminView')}</h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold border border-amber-200">
-              WUA & Judge Inspector
+              WUA & Water Officer Portal
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real-time OR-Tools Linear Solver status, LangGraph multi-agent execution, and audit trail.
+            Real-time OR-Tools Linear Solver status, AI Dispute Mediation logs, and village audit ledger.
           </p>
         </div>
 
-        <button
-          onClick={onTriggerReallocation}
-          className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2"
-        >
-          <Activity className="h-4 w-4" />
-          <span>Re-Run Solver Optimization</span>
-        </button>
+        <div className="flex items-center space-x-3 w-full md:w-auto justify-end">
+          <button
+            onClick={onTriggerReallocation}
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs shadow-sm transition flex items-center space-x-2"
+          >
+            <Activity className="h-4 w-4 text-emerald-600" />
+            <span>Re-Run Solver</span>
+          </button>
+
+          {onAcceptAllocation && (
+            <button
+              onClick={() => onAcceptAllocation(allocation.version)}
+              disabled={isAccepted}
+              className={`px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center space-x-1.5 ${
+                isAccepted
+                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              <span>{isAccepted ? 'Allocation Accepted & Locked ✅' : `Accept & Lock Allocation (v${allocation.version})`}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Overview Stat Cards */}
@@ -200,6 +232,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Active Disputes & AI Mediations Section */}
+      <div className="bg-white rounded-3xl border border-amber-200 p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-amber-600" />
+            <h3 className="font-bold text-base text-slate-900">Active Farmer Objections & AI Mediation Proposals</h3>
+          </div>
+          <span className="text-xs text-amber-800 font-bold bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            {disputeLogs.length} Dispute Event(s)
+          </span>
+        </div>
+
+        {disputeLogs.length === 0 ? (
+          <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-500">
+            No active disputes raised yet. All farmers are currently on standard allocation version v{allocation.version}.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {disputeLogs.map((dispute) => {
+              const disputeFarmId = Number(dispute.entity_id);
+              const isThisDisputeAccepted = isAccepted || (acceptedFarmIds && acceptedFarmIds.includes(disputeFarmId));
+
+              return (
+                <div key={dispute.id} className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-slate-900 text-sm">
+                        👨‍🌾 {typeof dispute.details === 'object' && dispute.details?.farmer ? dispute.details.farmer : `Farm #${dispute.entity_id}`}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] uppercase border border-amber-200">
+                        Farm #{dispute.entity_id} Objection
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {new Date(dispute.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+
+                  {typeof dispute.details === 'object' && dispute.details?.objection && (
+                    <p className="text-slate-700 bg-white p-2.5 rounded-xl border border-amber-100 italic">
+                      "{dispute.details.objection}"
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-emerald-800 font-semibold flex items-center gap-1">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      AI Compromise Plan Validated by OR-Tools
+                    </span>
+
+                    {onAcceptAllocation && (
+                      <button
+                        onClick={() => onAcceptAllocation(allocation.version, disputeFarmId)}
+                        disabled={isThisDisputeAccepted}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm transition ${
+                          isThisDisputeAccepted
+                            ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {isThisDisputeAccepted ? 'Approved & Accepted ✅' : 'Approve & Accept Proposal'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Immutable Audit Log Section */}

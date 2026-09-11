@@ -108,6 +108,7 @@ export default function Home() {
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAccepted, setIsAccepted] = useState<boolean>(false);
+  const [acceptedFarmIds, setAcceptedFarmIds] = useState<number[]>([]);
 
   // Modals
   const [whyItem, setWhyItem] = useState<AllocationItem | null>(null);
@@ -276,11 +277,16 @@ export default function Home() {
     return null;
   };
 
-  // Accept Allocation
-  const handleAcceptAllocation = async (version: number) => {
-    setIsAccepted(true);
+  // Accept Allocation (Overall or per Farm)
+  const handleAcceptAllocation = async (version: number, farmId?: number) => {
+    if (farmId) {
+      setAcceptedFarmIds(prev => Array.from(new Set([...prev, farmId])));
+    } else {
+      setIsAccepted(true);
+    }
+
     try {
-      await fetch(`${API_BASE}/agreements/accept?version=${version}`, { method: 'POST' });
+      await fetch(`${API_BASE}/agreements/accept?version=${version}${farmId ? `&farm_id=${farmId}` : ''}`, { method: 'POST' });
       await refreshBackendData();
     } catch (e) {
       console.log(e);
@@ -346,6 +352,7 @@ export default function Home() {
             onAcceptAllocation={handleAcceptAllocation}
             onOpenAddFarmModal={() => setShowAddFarmModal(true)}
             isAccepted={isAccepted}
+            acceptedFarmIds={acceptedFarmIds}
             authUser={authUser}
           />
         ) : (
@@ -353,6 +360,9 @@ export default function Home() {
             allocation={allocation}
             auditLogs={auditLogs}
             onTriggerReallocation={refreshBackendData}
+            onAcceptAllocation={handleAcceptAllocation}
+            isAccepted={isAccepted}
+            acceptedFarmIds={acceptedFarmIds}
           />
         )}
       </main>

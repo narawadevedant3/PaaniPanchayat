@@ -1,7 +1,7 @@
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.database import get_db, engine, Base
 from app import models, schemas
@@ -124,6 +124,7 @@ def reset_demo_data(db: Session = Depends(get_db)):
     """
     Resets the database with the exact PRD Section 29 4-Farm Demo Scenario.
     """
+    CURRENT_STATE["last_allocation"] = None
     db.query(models.AuditLog).delete()
     db.query(models.Agreement).delete()
     db.query(models.MediationSession).delete()
@@ -375,6 +376,9 @@ def calculate_req_endpoint(req: schemas.WaterRequirementCalculationRequest):
 # --- ALLOCATION & OPTIMIZATION ENDPOINT ---
 @router.post("/allocation/generate", response_model=schemas.AllocationResult)
 def generate_allocation_endpoint(db: Session = Depends(get_db)):
+    if CURRENT_STATE.get("last_allocation"):
+        return CURRENT_STATE["last_allocation"]
+
     farms = db.query(models.Farm).all()
     farms_data = []
     for f in farms:
@@ -424,14 +428,22 @@ def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends
     return proposal
 
 @router.post("/agreements/accept")
-def accept_agreement(version: int = 1, db: Session = Depends(get_db)):
+def accept_agreement(version: int = 1, farm_id: Optional[int] = None, db: Session = Depends(get_db)):
     agreement = models.Agreement(allocation_version=version, status="Accepted")
     db.add(agreement)
     db.commit()
-    log_audit(db, "Agreement", f"v{version}", "ACCEPT_FINAL_AGREEMENT", {"status": "Accepted", "accepted_at": datetime.datetime.utcnow().isoformat()})
-    return {"status": "success", "message": f"Allocation Version {version} Accepted and Saved to Immutable Audit Log!"}
+    log_audit(db, "Agreement", str(farm_id) if farm_id else f"v{version}", "ACCEPT_AGREEMENT", {
+        "status": "Accepted",
+        "farm_id": farm_id,
+        "version": version,
+        "accepted_at": datetime.datetime.utcnow().isoformat()
+    })
+    return {"status": "success", "message": f"Agreement accepted for farm #{farm_id or version}"}
 
 # --- AUDIT LOGS ENDPOINT ---
 @router.get("/audit")
 def get_audit_trail(db: Session = Depends(get_db)):
     return CURRENT_STATE["audit_logs"]
+    if not logs and CURRENT_STATE.get("audit_logs"):
+        return CURRENT_STATE["audit_logs"]
+    return logs
