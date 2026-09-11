@@ -129,6 +129,10 @@ class AllocationResult(BaseModel):
     overall_fairness_score: float
     optimization_status: str
 
+class WaterSourceUpdate(BaseModel):
+    available_volume_liters: float
+
+
 # Dispute & Mediation Schemas
 class ObjectionRequest(BaseModel):
     allocation_id: int

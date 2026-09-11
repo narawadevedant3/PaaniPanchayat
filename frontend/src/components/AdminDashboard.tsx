@@ -1,16 +1,15 @@
-"use client";
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { AllocationResult, AuditLogItem } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
-import { Scale, ShieldCheck, FileText, Activity, Droplets, Users, Clock, History, AlertCircle } from 'lucide-react';
+import { Scale, ShieldCheck, FileText, Activity, Droplets, Users, Clock, History, AlertCircle, Edit3, Check, X } from 'lucide-react';
 
 interface AdminDashboardProps {
   allocation: AllocationResult | null;
   auditLogs: AuditLogItem[];
   onTriggerReallocation: () => void;
   onAcceptAllocation?: (version: number, farmId?: number) => void;
+  onUpdateWaterSupply?: (newSupplyLiters: number) => Promise<void>;
   isAccepted?: boolean;
   acceptedFarmIds?: number[];
 }
@@ -22,10 +21,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   auditLogs,
   onTriggerReallocation,
   onAcceptAllocation,
+  onUpdateWaterSupply,
   isAccepted = false,
   acceptedFarmIds = []
 }) => {
   const { t } = useLanguage();
+  const [isEditingSupply, setIsEditingSupply] = useState(false);
+  const [supplyInput, setSupplyInput] = useState<string>('');
+  const [isSavingSupply, setIsSavingSupply] = useState(false);
+
+  const handleStartEditSupply = () => {
+    if (allocation) {
+      setSupplyInput(allocation.available_volume_liters.toString());
+      setIsEditingSupply(true);
+    }
+  };
+
+  const handleSaveSupply = async () => {
+    const val = parseFloat(supplyInput);
+    if (!isNaN(val) && val >= 0 && onUpdateWaterSupply) {
+      setIsSavingSupply(true);
+      try {
+        await onUpdateWaterSupply(val);
+        setIsEditingSupply(false);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSavingSupply(false);
+      }
+    }
+  };
 
   if (!allocation) {
     return (
@@ -99,12 +124,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm">
-          <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Available Canal Supply</span>
-          <span className="text-3xl font-black text-emerald-700 mt-1 block">
-            {allocation.available_volume_liters.toLocaleString()} L
-          </span>
-          <span className="text-[11px] text-slate-500">Canal Source Capacity #1</span>
+        <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">Available Canal Supply</span>
+              {!isEditingSupply && (
+                <button
+                  onClick={handleStartEditSupply}
+                  className="text-xs text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 transition"
+                  title="Edit Canal Water Supply"
+                >
+                  <Edit3 className="h-3 w-3" />
+                  <span>Edit</span>
+                </button>
+              )}
+            </div>
+
+            {isEditingSupply ? (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    value={supplyInput}
+                    onChange={(e) => setSupplyInput(e.target.value)}
+                    placeholder="Volume in Liters"
+                    className="w-full text-base font-bold px-3 py-1.5 border border-emerald-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    autoFocus
+                  />
+                  <span className="text-xs font-bold text-slate-600">L</span>
+                </div>
+                <div className="flex items-center space-x-2 pt-1">
+                  <button
+                    onClick={handleSaveSupply}
+                    disabled={isSavingSupply}
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center space-x-1 transition shadow-sm"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>{isSavingSupply ? 'Saving...' : 'Save & Solve'}</span>
+                  </button>
+                  <button
+                    onClick={() => setIsEditingSupply(false)}
+                    disabled={isSavingSupply}
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center transition"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <span className="text-3xl font-black text-emerald-700 mt-1 block">
+                {allocation.available_volume_liters.toLocaleString()} L
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500 mt-2 block">Canal Source Capacity #1</span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm">

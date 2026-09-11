@@ -299,6 +299,37 @@ export default function Home() {
     }
   };
 
+  // Update Water Supply in Admin
+  const handleUpdateWaterSupply = async (newSupplyLiters: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/water-source/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ available_volume_liters: newSupplyLiters })
+      });
+      if (res.ok) {
+        const updatedAlloc = await res.json();
+        setAllocation(updatedAlloc);
+        const auditRes = await fetch(`${API_BASE}/audit`);
+        if (auditRes.ok) {
+          const auditData = await auditRes.json();
+          setAuditLogs(auditData);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to update water supply:", e);
+      if (allocation) {
+        setAllocation({
+          ...allocation,
+          available_volume_liters: newSupplyLiters,
+          shortage_liters: Math.max(allocation.total_demand_liters - newSupplyLiters, 0),
+          is_conflict: allocation.total_demand_liters > newSupplyLiters,
+          version: allocation.version + 1
+        });
+      }
+    }
+  };
+
   // Add New Farm
   const handleAddFarm = async (farmData: any) => {
     try {
@@ -367,6 +398,7 @@ export default function Home() {
             auditLogs={auditLogs}
             onTriggerReallocation={refreshBackendData}
             onAcceptAllocation={handleAcceptAllocation}
+            onUpdateWaterSupply={handleUpdateWaterSupply}
             isAccepted={isAccepted}
             acceptedFarmIds={acceptedFarmIds}
           />

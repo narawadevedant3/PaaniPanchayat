@@ -74,15 +74,16 @@ def calculate_water_requirement(
     # Intermediate requirement before rain & previous irrigation credit
     subtotal = raw_base * stage_factor * weather_factor * soil_factor * eff_multiplier
 
-    # 6. Rainfall deductions (1 mm rain per acre = ~4046 Liters of water)
+    # 6. Rainfall deductions (1 mm rain per acre = 4,046.86 Liters of water)
     # Effective rainfall factor ~70% usable by crop
     usable_rain_mm = (rainfall_mm + forecast_rainfall_mm * 0.8)
-    forecast_rain_deduction = usable_rain_mm * 4000.0 * area_acres * 0.7
+    forecast_rain_deduction = usable_rain_mm * 4046.86 * area_acres * 0.7
 
     # 7. Previous irrigation credit (decay factor for recent watering)
     prev_irrigation_credit = previous_irrigation_liters * 0.35
 
-    final_requirement = max(subtotal - forecast_rain_deduction - prev_irrigation_credit, 10000.0)
+    min_floor = max(area_acres * 5000.0, 5000.0)
+    final_requirement = max(subtotal - forecast_rain_deduction - prev_irrigation_credit, min_floor)
 
     explanations = [
         f"🌱 Base crop demand for {area_acres} acres of {crop_name}: {raw_base:,.0f} L.",

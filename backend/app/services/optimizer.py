@@ -84,7 +84,12 @@ def solve_water_allocation(
     for i, farm in enumerate(farms_data):
         farm_id = farm['id']
         req = float(farm['required_liters'])
-        allocated = round(variables[i].solution_value(), 2) if status in [pywraplp.Solver.OPTIMAL, pywraplp.Solver.FEASIBLE] else round(req * (available_water_liters / total_demand), 2)
+        if status in [pywraplp.Solver.OPTIMAL, pywraplp.Solver.FEASIBLE]:
+            raw_val = variables[i].solution_value()
+            allocated = round(max(0.0, min(raw_val, req)), 2)
+        else:
+            allocated = round(req * (available_water_liters / total_demand), 2) if total_demand > 0 else 0.0
+        
         unmet = max(round(req - allocated, 2), 0.0)
 
         # Fairness score formula: 100 - (unmet_ratio / weight_factor)
@@ -92,8 +97,8 @@ def solve_water_allocation(
         fairness = max(round(100.0 - (unmet_ratio * 45.0 / (weights[i] / 1.2)), 1), 55.0)
         total_fairness_sum += fairness
 
-        # Schedule calculation
-        duration_minutes = max(int(allocated / flow_rate_lpm), 30) if allocated > 0 else 0
+        # Schedule calculation based on canal flow rate (450 Liters / min)
+        duration_minutes = max(int(allocated / flow_rate_lpm), 15) if allocated > 0 else 0
         
         start_h = current_time_minutes // 60
         start_m = current_time_minutes % 60

@@ -403,6 +403,63 @@ def generate_allocation_endpoint(db: Session = Depends(get_db)):
     log_audit(db, "Allocation", "v1", "GENERATE_INITIAL_ALLOCATION", {"is_conflict": allocation.is_conflict, "shortage": allocation.shortage_liters})
     return allocation
 
+# --- WATER SOURCE ENDPOINT ---
+@router.post("/water-source/update", response_model=schemas.AllocationResult)
+def update_water_source(update_in: schemas.WaterSourceUpdate, db: Session = Depends(get_db)):
+    """
+    Updates the available canal water supply (liters) and automatically re-runs the OR-Tools linear solver.
+    """
+    new_vol = float(update_in.available_volume_liters)
+    CURRENT_STATE["water_source_available"] = new_vol
+
+    # Update database record
+    source = db.query(models.WaterSource).first()
+    if source:
+        source.available_volume_liters = new_vol
+        source.status = "Scarce" if new_vol < 200000.0 else "Adequate"
+        db.commit()
+    else:
+        source = models.WaterSource(
+            name="Panchayat Shared Canal #1",
+            total_capacity_liters=300000.0,
+            available_volume_liters=new_vol,
+            status="Scarce" if new_vol < 200000.0 else "Adequate"
+        )
+        db.add(source)
+        db.commit()
+
+    # Re-run allocation solver with all farms
+    farms = db.query(models.Farm).all()
+    farms_data = []
+    for f in farms:
+        crop = db.query(models.Crop).filter(models.Crop.farm_id == f.id).first()
+        req = db.query(models.WaterRequirement).filter(models.WaterRequirement.farm_id == f.id).order_by(models.WaterRequirement.id.desc()).first()
+        req_vol = req.estimated_volume_liters if req else 50000.0
+        farms_data.append({
+            "id": f.id,
+            "farmer_name": f.farmer_name,
+            "crop_name": crop.name if crop else "Crop",
+            "area_acres": f.area_acres,
+            "growth_stage": crop.growth_stage if crop else "Vegetative",
+            "required_liters": req_vol,
+            "soil_type": f.soil_type,
+            "is_critical_stage": f.is_critical_stage
+        })
+
+    last_v = CURRENT_STATE["last_allocation"].version if CURRENT_STATE.get("last_allocation") else 1
+    new_v = last_v + 1
+    allocation = solve_water_allocation(farms_data, available_water_liters=new_vol, version=new_v)
+    CURRENT_STATE["last_allocation"] = allocation
+
+    log_audit(db, "WaterSource", "1", "UPDATE_CANAL_SUPPLY", {
+        "new_available_liters": new_vol,
+        "new_version": new_v,
+        "is_conflict": allocation.is_conflict,
+        "shortage": allocation.shortage_liters
+    })
+
+    return allocation
+
 # --- MEDIATION & DISPUTE ENDPOINTS ---
 @router.post("/mediation/propose", response_model=schemas.MediationProposalResponse)
 def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends(get_db)):
@@ -445,7 +502,17 @@ def accept_agreement(version: int = 1, farm_id: Optional[int] = None, db: Sessio
 # --- AUDIT LOGS ENDPOINT ---
 @router.get("/audit")
 def get_audit_trail(db: Session = Depends(get_db)):
-    return CURRENT_STATE["audit_logs"]
-    if not logs and CURRENT_STATE.get("audit_logs"):
+    db_logs = db.query(models.AuditLog).order_by(models.AuditLog.id.desc()).all()
+    res = []
+    for log in db_logs:
+        res.append({
+            "id": log.id,
+            "entity_type": log.entity_type,
+            "entity_id": log.entity_id,
+            "action": log.action,
+            "details": log.details,
+            "timestamp": log.created_at.isoformat() if hasattr(log, 'created_at') and log.created_at else datetime.datetime.utcnow().isoformat()
+        })
+    if not res and CURRENT_STATE.get("audit_logs"):
         return CURRENT_STATE["audit_logs"]
-    return logs
+    return res

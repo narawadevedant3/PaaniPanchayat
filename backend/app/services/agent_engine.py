@@ -61,8 +61,8 @@ class PaaniPanchayatAgentEngine:
                 "area_acres": item.area_acres,
                 "growth_stage": item.growth_stage,
                 "required_liters": item.required_liters,
-                "soil_type": "Clay",
-                "is_critical_stage": (item.farm_id == target_farm.farm_id)
+                "soil_type": getattr(item, "soil_type", "Clay"),
+                "is_critical_stage": (item.growth_stage in ["Flowering", "Fruit Development", "Pod Formation"]) or (item.farm_id == target_farm.farm_id)
             })
 
         new_version = current_allocation_result.version + 1
