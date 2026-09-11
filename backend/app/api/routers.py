@@ -187,6 +187,54 @@ def get_current_user(token: str, db: Session = Depends(get_db)):
         "language": user.language
     }
 
+def init_server_state(db: Session):
+    """
+    Restores in-memory state from the persistent SQLite database on startup or restart.
+    Preserves all existing users, farms, water source values, agreements, and requirements.
+    """
+    user_count = db.query(models.User).count()
+    if user_count == 0:
+        reset_demo_data(db)
+        print("[SUCCESS] PaaniPanchayat Backend Initialized with Demo Farms!")
+        return
+
+    # 1. Restore Water Source available volume
+    source = db.query(models.WaterSource).first()
+    if source and source.available_volume_liters is not None:
+        CURRENT_STATE["water_source_available"] = float(source.available_volume_liters)
+
+    # 2. Restore latest accepted agreement version
+    latest_agreement = (
+        db.query(models.Agreement)
+        .filter(models.Agreement.status == "Accepted")
+        .order_by(models.Agreement.id.desc())
+        .first()
+    )
+    if latest_agreement and latest_agreement.allocation_version:
+        CURRENT_STATE["accepted_version"] = latest_agreement.allocation_version
+
+    # 3. Restore cycle number if any in audit logs
+    recent_cycle_log = (
+        db.query(models.AuditLog)
+        .filter(models.AuditLog.action == "NEW_WATER_CYCLE")
+        .order_by(models.AuditLog.id.desc())
+        .first()
+    )
+    if recent_cycle_log and isinstance(recent_cycle_log.details, dict):
+        cycle_num = recent_cycle_log.details.get("cycle")
+        if cycle_num:
+            CURRENT_STATE["cycle_number"] = int(cycle_num)
+
+    # 4. Pre-run allocation for all existing farms so state is immediately ready
+    try:
+        active_version = CURRENT_STATE["accepted_version"] or 1
+        _run_allocation(db, version=active_version)
+    except Exception as e:
+        print(f"[WARN] Initial allocation calculation on restart: {e}")
+
+    farm_count = db.query(models.Farm).count()
+    print(f"[INFO] PaaniPanchayat loaded {user_count} users, {farm_count} farms, and canal supply of {CURRENT_STATE['water_source_available']:,.0f} L from persistent database.")
+
 # --- DEMO RESET & SEED DATA ENDPOINT ---
 @router.post("/demo/reset")
 def reset_demo_data(db: Session = Depends(get_db)):

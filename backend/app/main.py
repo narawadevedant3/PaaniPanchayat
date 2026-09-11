@@ -2,7 +2,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routers import router, reset_demo_data
+from app.api.routers import router, init_server_state, reset_demo_data
 from app.database import SessionLocal, Base, engine
 from app import models
 
@@ -13,11 +13,7 @@ Base.metadata.create_all(bind=engine)
 async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
-        if db.query(models.User).count() == 0:
-            reset_demo_data(db)
-            print("[SUCCESS] PaaniPanchayat Backend Initialized with Demo Farms!")
-        else:
-            print("[INFO] PaaniPanchayat Backend loaded existing database records.")
+        init_server_state(db)
     finally:
         db.close()
     yield
