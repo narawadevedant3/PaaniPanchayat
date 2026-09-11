@@ -58,7 +58,7 @@ export const WhyExplanationModal: React.FC<WhyExplanationModalProps> = ({ item, 
           <div className="space-y-3">
             <span className="text-xs text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
               <Calculator className="h-3.5 w-3.5" />
-              Requirement Calculation Factors
+              {t('calcFactors')}
             </span>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -72,23 +72,23 @@ export const WhyExplanationModal: React.FC<WhyExplanationModalProps> = ({ item, 
                 </span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-amber-600 font-bold block text-[10px] uppercase">Weather</span>
+                <span className="text-amber-600 font-bold block text-[10px] uppercase">{t('weather')}</span>
                 <span className="font-extrabold text-amber-700">
                   {breakdown.weather_adjustment_pct >= 0 ? '+' : ''}{Math.round(breakdown.weather_adjustment_pct)}%
                 </span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-blue-600 font-bold block text-[10px] uppercase">Soil</span>
+                <span className="text-blue-600 font-bold block text-[10px] uppercase">{t('soil')}</span>
                 <span className="font-extrabold text-blue-700">
                   {breakdown.soil_factor_adjustment_pct >= 0 ? '+' : ''}{Math.round(breakdown.soil_factor_adjustment_pct)}%
                 </span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-sky-600 font-bold block text-[10px] uppercase">Rain Forecast Credit</span>
+                <span className="text-sky-600 font-bold block text-[10px] uppercase">{t('rainForecastCredit')}</span>
                 <span className="font-extrabold text-sky-700">−{fmt(breakdown.forecast_rainfall_deduction_liters)} L</span>
               </div>
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-slate-600 font-bold block text-[10px] uppercase">Previous Irrigation Credit</span>
+                <span className="text-slate-600 font-bold block text-[10px] uppercase">{t('prevIrrigationCredit')}</span>
                 <span className="font-extrabold text-slate-700">−{fmt(breakdown.previous_irrigation_deduction_liters)} L</span>
               </div>
             </div>
@@ -98,7 +98,7 @@ export const WhyExplanationModal: React.FC<WhyExplanationModalProps> = ({ item, 
         {/* Reasoning Factor List */}
         <div className="space-y-3">
           <span className="text-xs text-slate-500 font-bold uppercase tracking-wider block">
-            {breakdown ? 'Engine Explanation' : 'Allocation Reasoning'}
+            {breakdown ? (t('calcFactors')) : t('whyThisAmount')}
           </span>
           <div className="space-y-2">
             {(breakdown?.explanation ?? item.reasoning).map((reason, idx) => (
@@ -116,7 +116,7 @@ export const WhyExplanationModal: React.FC<WhyExplanationModalProps> = ({ item, 
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition shadow-sm"
           >
-            Understood
+            {t('understood')}
           </button>
         </div>
 

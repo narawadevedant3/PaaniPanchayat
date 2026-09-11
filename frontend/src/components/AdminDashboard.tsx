@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { translateCrop, translateStage } from '../i18n/translations';
 import { AllocationResult, AuditLogItem } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import { Scale, ShieldCheck, FileText, Activity, Droplets, Users, History, AlertCircle, Edit3, Check, X, Waves, RotateCcw } from 'lucide-react';
@@ -31,7 +32,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   isAccepted = false,
   acceptedFarmIds = []
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [isEditingSupply, setIsEditingSupply] = useState(false);
   const [supplyInput, setSupplyInput] = useState<string>('');
   const [isSavingSupply, setIsSavingSupply] = useState(false);
@@ -143,7 +144,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm shadow-sm transition flex items-center space-x-2 disabled:opacity-50"
           >
             <Activity className={`h-4 w-4 text-emerald-600 shrink-0 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Re-Run Solver</span>
+            <span>{t('reRunSolver')}</span>
           </button>
 
           {onAcceptAllocation && (
@@ -157,7 +158,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               <ShieldCheck className="h-4 w-4 shrink-0" />
-              <span>{isAccepted ? 'Allocation Accepted & Locked ✅' : `Accept & Lock Allocation (v${allocation.version})`}</span>
+              <span>{isAccepted ? t('allocationAcceptedAndLocked') : `${t('acceptAndLock')} (v${allocation.version})`}</span>
             </button>
           )}
         </div>
@@ -337,14 +338,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <table className="w-full min-w-[700px] text-left text-xs text-slate-800">
             <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="p-4">Farmer</th>
-                <th className="p-4">Crop & Stage</th>
-                <th className="p-4">Area</th>
-                <th className="p-4">Required (L)</th>
-                <th className="p-4">Allocated (L)</th>
-                <th className="p-4">Unmet (L)</th>
-                <th className="p-4">Time Slot</th>
-                <th className="p-4">Fairness</th>
+                <th className="p-4">{t('farmer')}</th>
+                <th className="p-4">{t('cropAndStage')}</th>
+                <th className="p-4">{t('acres')}</th>
+                <th className="p-4">{t('requestLiters')}</th>
+                <th className="p-4">{t('allocatedLiters')}</th>
+                <th className="p-4">{t('shortageLiters')}</th>
+                <th className="p-4">{t('timeSlot')}</th>
+                <th className="p-4">{t('fairness')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -352,10 +353,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tr key={item.farm_id} className="hover:bg-slate-50 transition">
                   <td className="p-4 font-bold text-slate-900">{item.farmer_name}</td>
                   <td className="p-4">
-                    <span className="font-semibold block text-emerald-800">{item.crop_name}</span>
-                    <span className="text-[10px] text-slate-500">{item.growth_stage}</span>
+                    <span className="font-semibold block text-emerald-800">{translateCrop(item.crop_name, language)}</span>
+                    <span className="text-[10px] text-slate-500">{translateStage(item.growth_stage, language)}</span>
                   </td>
-                  <td className="p-4">{item.area_acres} acres</td>
+                  <td className="p-4">{item.area_acres} {t('acres')}</td>
                   <td className="p-4 font-mono">{item.required_liters.toLocaleString()}</td>
                   <td className="p-4 font-mono text-emerald-700 font-bold">{item.allocated_liters.toLocaleString()}</td>
                   <td className="p-4 font-mono text-rose-600">{item.unmet_liters.toLocaleString()}</td>

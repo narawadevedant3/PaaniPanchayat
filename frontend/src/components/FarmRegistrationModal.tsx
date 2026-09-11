@@ -1,4 +1,8 @@
+"use client";
+
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { translateCrop, translateStage, translateSoil } from '../i18n/translations';
 import { Droplets, ShieldAlert, Clock } from 'lucide-react';
 import { FarmFormData } from '../types';
 
@@ -8,6 +12,7 @@ interface FarmRegistrationModalProps {
 }
 
 export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ onClose, onAddFarm }) => {
+  const { t, language } = useLanguage();
   const [formData, setFormData] = useState({
     farmer_name: '',
     crop_name: 'Wheat',
@@ -32,7 +37,7 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
       onClose();
     } catch (err: any) {
       console.error(err);
-      setErrorMessage(err?.message || "Failed to submit water request. 1 request allowed per farmer every 3 days.");
+      setErrorMessage(err?.message || (language === 'mr' ? 'पाण्याची मागणी नोंदवण्यात अडचण आली. ३ दिवसांत १ मागणी करता येईल.' : language === 'hi' ? 'मांग जमा करने में विफल। 3 दिन में 1 अनुरोध की अनुमति है।' : "Failed to submit water request. 1 request allowed per farmer every 3 days."));
     } finally {
       setIsSubmitting(false);
     }
@@ -49,8 +54,8 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
               <Droplets className="h-6 w-6 text-emerald-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Create Water Request</h3>
-              <p className="text-xs text-emerald-700 font-medium">Submit Crop & Land Details for Allocation</p>
+              <h3 className="text-lg font-bold text-slate-900">{t('createWaterRequest')}</h3>
+              <p className="text-xs text-emerald-700 font-medium">{t('submitCropLandDetails')}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-sm">
@@ -61,7 +66,7 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
         {/* Panchayat Policy Warning Banner */}
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center space-x-2">
           <Clock className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span><strong>Panchayat Rule:</strong> 1 Water Request allowed per farmer every 3 days.</span>
+          <span>{t('panchayatRule')}</span>
         </div>
 
         {errorMessage && (
@@ -75,11 +80,11 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           
           <div>
-            <label className="text-slate-700 font-bold block mb-1">Farm Name / Plot Title:</label>
+            <label className="text-slate-700 font-bold block mb-1">{t('farmerName')} / Plot Title:</label>
             <input
               type="text"
               required
-              placeholder="e.g. North Canal Plot 1"
+              placeholder={language === 'mr' ? 'उदा. शेत क्र. १ (रामेश्वर)' : language === 'hi' ? 'उदा. खेत सं. 1 (रामेश्वर)' : 'e.g. North Canal Plot 1'}
               value={formData.farmer_name}
               onChange={(e) => setFormData({ ...formData, farmer_name: e.target.value })}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
@@ -88,23 +93,25 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-700 font-bold block mb-1">Crop Type:</label>
+              <label className="text-slate-700 font-bold block mb-1">{t('crop')}:</label>
               <select
                 value={formData.crop_name}
                 onChange={(e) => setFormData({ ...formData, crop_name: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
               >
-                <option value="Wheat">Wheat</option>
-                <option value="Tomato">Tomato</option>
-                <option value="Sugarcane">Sugarcane</option>
-                <option value="Onion">Onion</option>
-                <option value="Cotton">Cotton</option>
-                <option value="Rice">Rice</option>
+                <option value="Wheat">{translateCrop("Wheat", language)}</option>
+                <option value="Tomato">{translateCrop("Tomato", language)}</option>
+                <option value="Sugarcane">{translateCrop("Sugarcane", language)}</option>
+                <option value="Onion">{translateCrop("Onion", language)}</option>
+                <option value="Cotton">{translateCrop("Cotton", language)}</option>
+                <option value="Rice">{translateCrop("Rice", language)}</option>
+                <option value="Gram">{translateCrop("Gram", language)}</option>
+                <option value="Soybean">{translateCrop("Soybean", language)}</option>
               </select>
             </div>
 
             <div>
-              <label className="text-slate-700 font-bold block mb-1">Farm Area (Acres):</label>
+              <label className="text-slate-700 font-bold block mb-1">{t('areaAcres')}:</label>
               <input
                 type="number"
                 step="0.5"
@@ -119,31 +126,32 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-slate-700 font-bold block mb-1">Growth Stage:</label>
+              <label className="text-slate-700 font-bold block mb-1">{t('growthStage')}:</label>
               <select
                 value={formData.growth_stage}
                 onChange={(e) => setFormData({ ...formData, growth_stage: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
               >
-                <option value="Flowering">Flowering</option>
-                <option value="Fruit Development">Fruit Development</option>
-                <option value="Bulb Development">Bulb Development</option>
-                <option value="Vegetative">Vegetative</option>
-                <option value="Initial / Germination">Initial / Germination</option>
+                <option value="Flowering">{translateStage("Flowering", language)}</option>
+                <option value="Fruit Development">{translateStage("Fruit Development", language)}</option>
+                <option value="Vegetative">{translateStage("Vegetative", language)}</option>
+                <option value="Initial">{translateStage("Initial", language)}</option>
+                <option value="Tillering">{translateStage("Tillering", language)}</option>
+                <option value="Maturity">{translateStage("Maturity", language)}</option>
               </select>
             </div>
 
             <div>
-              <label className="text-slate-700 font-bold block mb-1">Soil Type:</label>
+              <label className="text-slate-700 font-bold block mb-1">{t('soilType')}:</label>
               <select
                 value={formData.soil_type}
                 onChange={(e) => setFormData({ ...formData, soil_type: e.target.value })}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
               >
-                <option value="Clay">Clay</option>
-                <option value="Loam">Loam</option>
-                <option value="Black">Black (Regur)</option>
-                <option value="Sandy">Sandy</option>
+                <option value="Clay">{translateSoil("Clay", language)}</option>
+                <option value="Loamy">{translateSoil("Loamy", language)}</option>
+                <option value="Black">{translateSoil("Black", language)}</option>
+                <option value="Sandy">{translateSoil("Sandy", language)}</option>
               </select>
             </div>
           </div>
@@ -154,7 +162,7 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition"
             >
-              Cancel
+              {language === 'mr' ? 'रद्द करा' : language === 'hi' ? 'रद्द करें' : 'Cancel'}
             </button>
             <button
               type="submit"
@@ -162,7 +170,7 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
               className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition shadow-sm flex items-center space-x-1.5"
             >
               <Droplets className="h-4 w-4" />
-              <span>{isSubmitting ? "Submitting..." : "Submit Water Request"}</span>
+              <span>{isSubmitting ? t('submitting') : t('submitRequestBtn')}</span>
             </button>
           </div>
 

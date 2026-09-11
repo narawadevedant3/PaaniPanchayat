@@ -1,6 +1,56 @@
+export const CROP_TRANSLATIONS: Record<string, { en: string; hi: string; mr: string }> = {
+  Wheat: { en: "Wheat", hi: "गेहूं", mr: "गहू" },
+  Tomato: { en: "Tomato", hi: "टमाटर", mr: "टोमॅटो" },
+  Sugarcane: { en: "Sugarcane", hi: "गन्ना", mr: "ऊस" },
+  Gram: { en: "Gram (Chana)", hi: "चना", mr: "हरभरा" },
+  Cotton: { en: "Cotton", hi: "कपास", mr: "कापूस" },
+  Onion: { en: "Onion", hi: "प्याज", mr: "कांदा" },
+  Rice: { en: "Rice", hi: "चावल / धान", mr: "भात / तांदूळ" },
+  Maize: { en: "Maize", hi: "मक्का", mr: "मका" },
+  Soybean: { en: "Soybean", hi: "सोयाबीन", mr: "सोयाबीन" },
+};
+
+export const STAGE_TRANSLATIONS: Record<string, { en: string; hi: string; mr: string }> = {
+  Flowering: { en: "Flowering", hi: "फूल आने की अवस्था", mr: "फुलोरा अवस्था" },
+  Vegetative: { en: "Vegetative", hi: "शाकीय वाढ", mr: "शाकीय वाढ" },
+  "Fruit Development": { en: "Fruit Development", hi: "फल विकास", mr: "फळ धारणा" },
+  Maturity: { en: "Maturity", hi: "परिपक्वता", mr: "परिपक्वता" },
+  Initial: { en: "Initial Stage", hi: "प्रारंभिक अवस्था", mr: "सुरुवातीचा टप्पा" },
+  Tillering: { en: "Tillering", hi: "कल्ले फूटना", mr: "फुटवे फुटणे" },
+  Ripening: { en: "Ripening", hi: "पकने की अवस्था", mr: "पक्व होणे" },
+};
+
+export const SOIL_TRANSLATIONS: Record<string, { en: string; hi: string; mr: string }> = {
+  Clay: { en: "Clay Soil", hi: "चिकनी मिट्टी", mr: "काळी माती" },
+  Loamy: { en: "Loamy Soil", hi: "दोमट मिट्टी", mr: "गाळाची सुपीक माती" },
+  Sandy: { en: "Sandy Soil", hi: "बलुई मिट्टी", mr: "वाळूमिश्रित माती" },
+  Black: { en: "Black Soil", hi: "काली मिट्टी", mr: "काळी कसदार माती" },
+};
+
+export function translateCrop(name: string, lang: string): string {
+  if (!name) return "";
+  const match = CROP_TRANSLATIONS[name];
+  if (!match) return name;
+  return (match as any)[lang] || match.en || name;
+}
+
+export function translateStage(stage: string, lang: string): string {
+  if (!stage) return "";
+  const match = STAGE_TRANSLATIONS[stage];
+  if (!match) return stage;
+  return (match as any)[lang] || match.en || stage;
+}
+
+export function translateSoil(soil: string, lang: string): string {
+  if (!soil) return "";
+  const match = SOIL_TRANSLATIONS[soil];
+  if (!match) return soil;
+  return (match as any)[lang] || match.en || soil;
+}
+
 export const translations = {
   en: {
-    // Water cycle
+    // Water cycle & System
     newWaterArrived: "New Water Released",
     waterCycle: "Water Cycle",
     cycle: "Cycle",
@@ -24,8 +74,8 @@ export const translations = {
     appTitle: "PaaniPanchayat",
     tagline: "Fair Water. Peaceful Farming.",
     farmerView: "Farmer Portal",
-    adminView: "WUA / Judge View",
-    demoReset: "Reset Demo Scenario",
+    adminView: "Panchayat Admin",
+    demoReset: "Reset Demo",
     installApp: "Install App",
     language: "Language",
     
@@ -38,7 +88,31 @@ export const translations = {
     growthStage: "Growth Stage",
     soilType: "Soil Type",
     whyThisAmount: "Why this amount?",
-    
+    whyThisAmountFull: "Why this amount?",
+    allocatedWaterHeader: "Allocated Water",
+    createWaterRequest: "Create Water Request",
+    noActiveWaterRequest: "No Active Water Request",
+    noActiveRequestDesc: "Click below to submit your crop stage and land details for canal allocation.",
+    warmAndDry: "32°C Warm & Dry",
+    canalTurnActive: "Canal Turn Active",
+    orToolsVerified: "OR-Tools Verified",
+    farmParcelsDesc: "Showing registered farm parcels and water allocations for your account.",
+    yourFairnessRating: "Your Fairness Rating",
+    active: "Active",
+    today: "Today",
+    waterScheduled: "Water Scheduled",
+    agreementStatus: "Agreement Status",
+    finalAgreementAccepted: "✓ Final Agreement Accepted",
+    proposedPendingConfirmation: "Proposed Allocation Pending Confirmation",
+    acceptedCheck: "Accepted ✅",
+    policyCooldownNotice: "3-Day Policy Cooldown",
+    hoursRemaining: "hours left",
+    orToolsAuditNote: "OR-Tools hard constraints verified with transparent AI audit log.",
+    home: "Home",
+    water: "Water",
+    mediation: "Mediation",
+    profile: "Profile",
+
     // Water Situation
     waterSituationTitle: "Canal Water Availability",
     availableSupply: "Available Water",
@@ -66,10 +140,42 @@ export const translations = {
     totalSupplyVsDemand: "Water Supply vs Total Demand",
     farmAllocations: "Farm Allocation Matrix",
     solverStatus: "OR-Tools Hard Constraint Status",
-    auditLogsTitle: "Immutable Audit History"
+    auditLogsTitle: "Immutable Audit History",
+    reRunSolver: "Re-Run Solver",
+    acceptAndLock: "Accept & Lock Allocation",
+    allocationAcceptedAndLocked: "Allocation Accepted & Locked ✅",
+
+    // Modals & Explanations
+    understood: "Understood",
+    calcFactors: "Requirement Calculation Factors",
+    weather: "Weather",
+    soil: "Soil",
+    rainForecastCredit: "Rain Forecast Credit",
+    prevIrrigationCredit: "Previous Irrigation Credit",
+    panchayatRule: "Panchayat Rule: 1 Water Request allowed per farmer every 3 days.",
+    submitCropLandDetails: "Submit Crop & Land Details for Allocation",
+    farmerName: "Farmer Name",
+    areaAcres: "Land Area (Acres)",
+    irrigationEfficiency: "Irrigation Method / Efficiency",
+    dripIrrigation: "Drip Irrigation (90% Efficiency)",
+    sprinklerIrrigation: "Sprinkler Irrigation (75% Efficiency)",
+    floodIrrigation: "Surface / Flood (60% Efficiency)",
+    prevWaterReceived: "Previous Water Received (Liters)",
+    isCriticalStage: "Critical Crop Water Stress Stage (Priority Boost)",
+    submitRequestBtn: "Submit Water Request",
+    submitting: "Submitting to Optimizer...",
+
+    // Footer
+    systemFeatures: "System Features",
+    panchayatAssistance: "Panchayat Assistance",
+    waterHelpline: "Water Helpline",
+    helplineDesc: "Dispute Officers available 24/7 during canal rotation cycles.",
+    irrigationDesk: "Irrigation Officer Desk",
+    panchayatOffice: "Gram Panchayat Office, Canal Zone #1",
+    platformOverview: "AI-Powered Water Sharing & Dispute Mediation Platform for Indian Farmers. Optimizing canal allocations with Google OR-Tools to eliminate water disputes."
   },
   hi: {
-    // Water cycle
+    // Water cycle & System
     newWaterArrived: "नया पानी जारी हुआ",
     waterCycle: "पानी चक्र",
     cycle: "चक्र",
@@ -93,8 +199,8 @@ export const translations = {
     appTitle: "पानी पंचायत",
     tagline: "न्यायपूर्ण पानी। समृद्ध खेती।",
     farmerView: "किसान पोर्टल",
-    adminView: "व्यवस्थापक / जज व्यू",
-    demoReset: "डेमो रीसेट करें",
+    adminView: "पंचायत व्यवस्थापक",
+    demoReset: "डेमो रीसेट",
     installApp: "ऐप इंस्टॉल करें",
     language: "भाषा",
 
@@ -106,7 +212,31 @@ export const translations = {
     crop: "फसल",
     growthStage: "विकास चरण",
     soilType: "मिट्टी का प्रकार",
-    whyThisAmount: "इतना पानी क्यों?",
+    whyThisAmount: "यह मात्रा क्यों?",
+    whyThisAmountFull: "यह मात्रा क्यों? (कारण देखें)",
+    allocatedWaterHeader: "आवंटित सिंचाई जल",
+    createWaterRequest: "पानी की मांग दर्ज करें",
+    noActiveWaterRequest: "कोई सक्रिय पानी की मांग नहीं",
+    noActiveRequestDesc: "नहर आवंटन के लिए फसल अवस्था और जमीन का विवरण दर्ज करने हेतु नीचे क्लिक करें।",
+    warmAndDry: "32°C गर्म और शुष्क",
+    canalTurnActive: "नहर की बारी सक्रिय",
+    orToolsVerified: "ऑप्टिमाइज़र द्वारा सत्यापित",
+    farmParcelsDesc: "आपके खाते के लिए पंजीकृत खेत और पानी आवंटन दिखाया जा रहा है।",
+    yourFairnessRating: "आपकी निष्पक्षता रेटिंग",
+    active: "सक्रिय",
+    today: "आज",
+    waterScheduled: "आवंटित पानी",
+    agreementStatus: "समझौता स्थिति",
+    finalAgreementAccepted: "✓ अंतिम समझौता स्वीकृत",
+    proposedPendingConfirmation: "प्रस्तावित आवंटन (पुष्टि प्रतीक्षित)",
+    acceptedCheck: "स्वीकृत ✅",
+    policyCooldownNotice: "3-दिवसीय नीति कूलडाउन",
+    hoursRemaining: "घंटे शेष",
+    orToolsAuditNote: "पारदर्शी एआई ऑडिट लॉग के साथ ऑप्टिमाइज़र नियमों का सत्यापन।",
+    home: "होम",
+    water: "पानी",
+    mediation: "मध्यस्थता",
+    profile: "प्रोफ़ाइल",
 
     // Water Situation
     waterSituationTitle: "नहर में पानी की उपलब्धता",
@@ -135,10 +265,42 @@ export const translations = {
     totalSupplyVsDemand: "पानी की आपूर्ति बनाम मांग",
     farmAllocations: "खेत आवंटन विवरण",
     solverStatus: "ऑप्टिमाइज़र प्रतिबंध स्थिति",
-    auditLogsTitle: "अपरिवर्तनीय ऑडिट इतिहास"
+    auditLogsTitle: "अपरिवर्तनीय ऑडिट इतिहास",
+    reRunSolver: "ऑप्टिमाइज़र पुनः चलाएं",
+    acceptAndLock: "आवंटन स्वीकार व लॉक करें",
+    allocationAcceptedAndLocked: "आवंटन स्वीकृत व लॉक ✅",
+
+    // Modals & Explanations
+    understood: "समझ गया",
+    calcFactors: "पानी आवश्यकता गणना घटक",
+    weather: "मौसम प्रभाव",
+    soil: "मिट्टी प्रकार",
+    rainForecastCredit: "वर्षा पूर्वानुमान कटौती",
+    prevIrrigationCredit: "पिछली सिंचाई कटौती",
+    panchayatRule: "पंचायत नियम: प्रत्येक किसान को 3 दिन में 1 पानी की मांग की अनुमति है।",
+    submitCropLandDetails: "आवंटन के लिए फसल और जमीन का विवरण दें",
+    farmerName: "किसान का नाम",
+    areaAcres: "जमीन का क्षेत्रफल (एकड़)",
+    irrigationEfficiency: "सिंचाई विधि / दक्षता",
+    dripIrrigation: "ड्रिप सिंचाई (90% दक्षता)",
+    sprinklerIrrigation: "स्प्रिंकलर सिंचाई (75% दक्षता)",
+    floodIrrigation: "पारंपरिक / बाढ़ सिंचाई (60% दक्षता)",
+    prevWaterReceived: "पिछली बार मिला पानी (लीटर)",
+    isCriticalStage: "फसल के लिए अत्यधिक महत्वपूर्ण अवस्था (प्राथमिकता)",
+    submitRequestBtn: "पानी की मांग जमा करें",
+    submitting: "जमा हो रहा है...",
+
+    // Footer
+    systemFeatures: "सिस्टम की विशेषताएं",
+    panchayatAssistance: "पंचायत सहायता",
+    waterHelpline: "जल हेल्पलाइन",
+    helplineDesc: "नहर चक्र के दौरान अधिकारी 24/7 सहायता के लिए उपलब्ध हैं।",
+    irrigationDesk: "सिंचाई अधिकारी डेस्क",
+    panchayatOffice: "ग्राम पंचायत कार्यालय, नहर ज़ोन #1",
+    platformOverview: "भारतीय किसानों के लिए एआई-संचालित जल साझाकरण और विवाद समाधान मंच। Google OR-Tools द्वारा नहर जल का निष्पक्ष वितरण।"
   },
   mr: {
-    // Water cycle
+    // Water cycle & System
     newWaterArrived: "नवीन पाणी सोडले",
     waterCycle: "पाणी चक्र",
     cycle: "चक्र",
@@ -162,8 +324,8 @@ export const translations = {
     appTitle: "पाणी पंचायत",
     tagline: "न्याय्य पाणी. समृद्ध शेती.",
     farmerView: "शेतकरी पोर्टल",
-    adminView: "प्रशासक / जज व्ह्यू",
-    demoReset: "डेमो रीसेट करा",
+    adminView: "पंचायत प्रशासक",
+    demoReset: "डेमो रीसेट",
     installApp: "ॲप इन्स्टॉल करा",
     language: "भाषा",
 
@@ -176,6 +338,30 @@ export const translations = {
     growthStage: "वाढीचा टप्पा",
     soilType: "मातीचा प्रकार",
     whyThisAmount: "एवढे पाणी का?",
+    whyThisAmountFull: "हे प्रमाण का? (कारण पाहा)",
+    allocatedWaterHeader: "सिंचन वाटप",
+    createWaterRequest: "पाण्याची मागणी नोंदवा",
+    noActiveWaterRequest: "कोणतीही सक्रिय पाण्याची मागणी नाही",
+    noActiveRequestDesc: "पाटातील पाणी वाटपासाठी आपल्या पिकाचा टप्पा व जमिनीची माहिती खाली नोंदवा.",
+    warmAndDry: "32°C उष्ण व कोरडे हवामान",
+    canalTurnActive: "पाटाची पाळी सुरू",
+    orToolsVerified: "ऑप्टिमायझर द्वारे प्रमाणित",
+    farmParcelsDesc: "आपल्या खात्याशी जोडलेली शेतजमीन व मंजूर पाणी वाटप दाखवले आहे.",
+    yourFairnessRating: "तुमचा न्याय्यता दर",
+    active: "सक्रिय",
+    today: "आज",
+    waterScheduled: "नियोजित पाणी",
+    agreementStatus: "कराराची स्थिती",
+    finalAgreementAccepted: "✓ अंतिम करार मान्य",
+    proposedPendingConfirmation: "प्रस्तावित वाटप (मंजुरी प्रतीक्षेत)",
+    acceptedCheck: "मान्य केले ✅",
+    policyCooldownNotice: "३-दिवसांचा नियम (कूलडाऊन)",
+    hoursRemaining: "तास शिल्लक",
+    orToolsAuditNote: "पारदर्शक एआय ऑडिट नोंदीसह ऑप्टिमायझर नियमांची खात्री केली आहे.",
+    home: "मुख्य पान",
+    water: "पाणी",
+    mediation: "मध्यस्थी",
+    profile: "प्रोफाइल",
 
     // Water Situation
     waterSituationTitle: "पाटातील पाण्याची उपलब्धता",
@@ -204,6 +390,38 @@ export const translations = {
     totalSupplyVsDemand: "पाणी पुरवठा विरुद्ध एकूण मागणी",
     farmAllocations: "शेतनिहाय वाटप तक्ता",
     solverStatus: "ऑप्टिमायझर नियम स्थिती",
-    auditLogsTitle: "कायमस्वरूपी ऑडिट इतिहास"
+    auditLogsTitle: "कायमस्वरूपी ऑडिट इतिहास",
+    reRunSolver: "ऑप्टिमायझर पुन्हा चालवा",
+    acceptAndLock: "वाटप मान्य व लॉक करा",
+    allocationAcceptedAndLocked: "वाटप मान्य व लॉक केले ✅",
+
+    // Modals & Explanations
+    understood: "समजले",
+    calcFactors: "पाणी मोजणी घटक",
+    weather: "हवामान प्रभाव",
+    soil: "मातीचा प्रकार",
+    rainForecastCredit: "पाऊस अंदाजानुसार वजावट",
+    prevIrrigationCredit: "मागील सिंचनाची वजावट",
+    panchayatRule: "पंचायत नियम: प्रत्येक शेतकऱ्याला ३ दिवसांत १ वेळा पाण्याची मागणी करता येईल.",
+    submitCropLandDetails: "पाणी वाटपासाठी पीक व जमिनीचा तपशील भरा",
+    farmerName: "शेतकऱ्याचे नाव",
+    areaAcres: "जमिनीचे क्षेत्रफळ (एकर)",
+    irrigationEfficiency: "सिंचन पद्धती / कार्यक्षमता",
+    dripIrrigation: "ठिबक सिंचन (९०% कार्यक्षमता)",
+    sprinklerIrrigation: "तुषार सिंचन (७५% कार्यक्षमता)",
+    floodIrrigation: "पारंपरिक पाटपाणी (६०% कार्यक्षमता)",
+    prevWaterReceived: "मागील वेळी मिळालेले पाणी (लिटर)",
+    isCriticalStage: "पिकासाठी अतिसंवेदनशील टप्पा (अतितातडीचे)",
+    submitRequestBtn: "पाण्याची मागणी दाखल करा",
+    submitting: "नोंदणी होत आहे...",
+
+    // Footer
+    systemFeatures: "प्रणालीची वैशिष्ट्ये",
+    panchayatAssistance: "पंचायत सहाय्यता",
+    waterHelpline: "पाणी हेल्पलाइन",
+    helplineDesc: "पाटाच्या पाळीदरम्यान अधिकारी २४/७ मदतीसाठी उपलब्ध आहेत.",
+    irrigationDesk: "सिंचन अधिकारी कार्यालय",
+    panchayatOffice: "ग्रामपंचायत कार्यालय, कालवा विभाग क्र. १",
+    platformOverview: "भारतीय शेतकऱ्यांसाठी एआय-आधारित पाणी वाटप व विवाद निवारण व्यासपीठ. Google OR-Tools द्वारे कालव्याच्या पाण्याचे न्याय्य वाटप."
   }
 };

@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-white/95 border-b border-emerald-100 text-slate-800 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
+
         {/* Brand Logo & Name */}
         <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 shrink">
           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-emerald-600 p-0.5 shadow-md shadow-emerald-600/20 flex items-center justify-center overflow-hidden shrink-0">
@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
                 {t('appTitle')}
               </span>
               <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200 shrink-0">
-                PWA MVP
+                PWA
               </span>
             </div>
             <p className="text-xs text-slate-500 hidden md:block truncate">
@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
             title="Reset to 4-Farm Demo Scenario (180,000 L)"
           >
             <RefreshCw className={`h-3.5 w-3.5 text-amber-600 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline">Reset Demo</span>
+            <span className="hidden md:inline">{t('demoReset')}</span>
           </button>
 
           {/* Active Role Switcher Toggle */}
@@ -95,14 +95,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
             {currentRole === 'admin' ? (
               <span className="flex items-center space-x-1 text-amber-700">
                 <Scale className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <span className="hidden sm:inline">Panchayat Admin</span>
-                <span className="sm:hidden text-[11px]">Admin</span>
+                <span className="hidden sm:inline">{t('adminView')}</span>
+                <span className="sm:hidden text-[11px]">{t('admin')}</span>
               </span>
             ) : (
               <span className="flex items-center space-x-1 text-emerald-800">
                 <User className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                <span className="hidden sm:inline">Farmer Portal</span>
-                <span className="sm:hidden text-[11px]">Farmer</span>
+                <span className="hidden sm:inline">{t('farmerView')}</span>
+                <span className="sm:hidden text-[11px]">{t('farmer')}</span>
               </span>
             )}
           </button>
@@ -124,9 +124,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
           {/* PWA Install App Button */}
           <button
             onClick={handleInstallApp}
-            className={`flex items-center space-x-1 px-2 py-1.5 sm:px-2.5 rounded-lg text-xs font-medium shadow-sm transition shrink-0 ${
-              isInstallable ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white'
-            }`}
+            className={`flex items-center space-x-1 px-2 py-1.5 sm:px-2.5 rounded-lg text-xs font-medium shadow-sm transition shrink-0 ${isInstallable ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white'
+              }`}
             title="Install PWA to Home Screen"
           >
             <Download className="h-3.5 w-3.5 shrink-0" />
