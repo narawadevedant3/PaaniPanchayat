@@ -58,6 +58,8 @@ class FarmCreate(BaseModel):
 
 class FarmResponse(BaseModel):
     id: int
+    user_id: Optional[int] = None
+    user_email: Optional[str] = None
     farmer_name: str
     location: str
     latitude: float
@@ -105,6 +107,8 @@ class WaterRequirementResponse(BaseModel):
 # Optimization & Allocation Schemas
 class AllocationItem(BaseModel):
     farm_id: int
+    user_id: Optional[int] = None
+    user_email: Optional[str] = None
     farmer_name: str
     crop_name: str
     area_acres: float

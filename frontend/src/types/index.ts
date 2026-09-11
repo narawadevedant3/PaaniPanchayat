@@ -26,6 +26,8 @@ export interface RegisterData {
 
 export interface Farm {
   id: number;
+  user_id?: number;
+  user_email?: string;
   farmer_name: string;
   location: string;
   latitude: number;
@@ -53,6 +55,8 @@ export interface RequirementBreakdown {
 
 export interface AllocationItem {
   farm_id: number;
+  user_id?: number;
+  user_email?: string;
   farmer_name: string;
   crop_name: string;
   area_acres: number;

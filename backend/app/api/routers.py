@@ -227,6 +227,8 @@ def reset_demo_data(db: Session = Depends(get_db)):
 
         farms_optimizer_input.append({
             "id": farm.id,
+            "user_id": user.id,
+            "user_email": user.email,
             "farmer_name": f["name"],
             "crop_name": f["crop"],
             "area_acres": f["area"],
@@ -264,8 +266,11 @@ def get_farms(db: Session = Depends(get_db)):
     res = []
     for f in farms:
         crop = db.query(models.Crop).filter(models.Crop.farm_id == f.id).first()
+        u = db.query(models.User).filter(models.User.id == f.user_id).first() if f.user_id else None
         res.append(schemas.FarmResponse(
             id=f.id,
+            user_id=f.user_id,
+            user_email=u.email if u else None,
             farmer_name=f.farmer_name,
             location=f.location,
             latitude=f.latitude,
@@ -387,8 +392,11 @@ def generate_allocation_endpoint(db: Session = Depends(get_db)):
         crop = db.query(models.Crop).filter(models.Crop.farm_id == f.id).first()
         req = db.query(models.WaterRequirement).filter(models.WaterRequirement.farm_id == f.id).order_by(models.WaterRequirement.id.desc()).first()
         req_vol = req.estimated_volume_liters if req else 50000.0
+        u = db.query(models.User).filter(models.User.id == f.user_id).first() if f.user_id else None
         farms_data.append({
             "id": f.id,
+            "user_id": f.user_id,
+            "user_email": u.email if u else None,
             "farmer_name": f.farmer_name,
             "crop_name": crop.name if crop else "Crop",
             "area_acres": f.area_acres,
@@ -435,8 +443,11 @@ def update_water_source(update_in: schemas.WaterSourceUpdate, db: Session = Depe
         crop = db.query(models.Crop).filter(models.Crop.farm_id == f.id).first()
         req = db.query(models.WaterRequirement).filter(models.WaterRequirement.farm_id == f.id).order_by(models.WaterRequirement.id.desc()).first()
         req_vol = req.estimated_volume_liters if req else 50000.0
+        u = db.query(models.User).filter(models.User.id == f.user_id).first() if f.user_id else None
         farms_data.append({
             "id": f.id,
+            "user_id": f.user_id,
+            "user_email": u.email if u else None,
             "farmer_name": f.farmer_name,
             "crop_name": crop.name if crop else "Crop",
             "area_acres": f.area_acres,

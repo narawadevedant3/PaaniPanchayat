@@ -143,13 +143,14 @@ export default function Home() {
   // Automatically bind selectedFarmId to logged in user's farm
   useEffect(() => {
     if (authUser && allocation && allocation.allocations.length > 0) {
-      const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const userEmailPrefix = authUser.email ? cleanString(authUser.email.split('@')[0]) : '';
-      const cleanUserName = authUser.name ? cleanString(authUser.name) : '';
-
       const matched = allocation.allocations.find(a => {
+        if (a.user_id && authUser.user_id && a.user_id === authUser.user_id) return true;
+        if (a.user_email && authUser.email && a.user_email.toLowerCase().trim() === authUser.email.toLowerCase().trim()) return true;
+        const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const userEmailPrefix = authUser.email ? cleanString(authUser.email.split('@')[0]) : '';
+        const cleanUserName = authUser.name ? cleanString(authUser.name) : '';
         const cleanItemOwner = cleanString(a.farmer_name);
-        if (cleanUserName && cleanUserName.length > 2 && cleanItemOwner.includes(cleanUserName)) return true;
+        if (cleanUserName && cleanUserName.length > 3 && cleanItemOwner.includes(cleanUserName)) return true;
         if (userEmailPrefix && userEmailPrefix.length > 2 && cleanItemOwner.includes(userEmailPrefix)) return true;
         return false;
       });

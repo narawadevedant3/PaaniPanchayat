@@ -120,6 +120,8 @@ def solve_water_allocation(
 
         allocations.append(AllocationItem(
             farm_id=farm_id,
+            user_id=farm.get('user_id'),
+            user_email=farm.get('user_email'),
             farmer_name=farm['farmer_name'],
             crop_name=farm['crop_name'],
             area_acres=farm['area_acres'],

@@ -45,44 +45,42 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
     );
   }
 
-  // Helper to match farmer allocations to logged in user profile
-  const matchFarmerAllocation = (itemFarmerName: string, user: AuthUser | null | undefined) => {
+  // Helper to match farmer allocations strictly to logged in user profile by user_id or email
+  const matchFarmerAllocation = (item: AllocationItem, user: AuthUser | null | undefined) => {
     if (!user) return true;
-    const userEmail = user.email ? user.email.toLowerCase().trim() : '';
-    const userName = user.name ? user.name.toLowerCase().trim() : '';
-    const itemOwner = itemFarmerName.toLowerCase().trim();
 
-    const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    const cleanEmailPrefix = userEmail ? cleanString(userEmail.split('@')[0]) : '';
-    const cleanUserName = cleanString(userName);
-    const cleanItemOwner = cleanString(itemOwner);
-
-    // 1. Direct alphanumeric containment match (handles spaces/punctuation differences)
-    if (cleanUserName && cleanUserName.length > 2 && cleanItemOwner.includes(cleanUserName)) return true;
-    if (cleanEmailPrefix && cleanEmailPrefix.length > 2 && cleanItemOwner.includes(cleanEmailPrefix)) return true;
-
-    // 2. Email handle match
-    const emailPrefix = userEmail.split('@')[0];
-    if (emailPrefix && emailPrefix.length > 2 && itemOwner.includes(emailPrefix)) {
+    // 1. Direct user_id match
+    if (item.user_id && user.user_id && item.user_id === user.user_id) {
       return true;
     }
 
-    // 3. First name overlap (e.g. "Ramesh" in "Ramesh (Farm A)")
-    const userFirstName = userName.split('(')[0].trim().split(' ')[0];
-    const itemFirstName = itemOwner.split('(')[0].trim().split(' ')[0];
+    // 2. Direct email match
+    const userEmail = user.email ? user.email.toLowerCase().trim() : '';
+    const itemEmail = item.user_email ? item.user_email.toLowerCase().trim() : '';
+    if (itemEmail && userEmail && itemEmail === userEmail) {
+      return true;
+    }
 
-    if (userFirstName && itemFirstName && userFirstName.length > 2 && itemFirstName.length > 2) {
-      if (userFirstName === itemFirstName || itemOwner.includes(userFirstName) || userFirstName.includes(itemFirstName)) {
-        return true;
-      }
+    // 3. Email handle prefix match (e.g. "ramesh@paanipanchayat.org" matches "Ramesh (Farm A)")
+    const cleanString = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanEmailPrefix = userEmail ? cleanString(userEmail.split('@')[0]) : '';
+    const cleanItemOwner = cleanString(item.farmer_name);
+
+    if (cleanEmailPrefix && cleanEmailPrefix.length > 2 && cleanItemOwner.includes(cleanEmailPrefix)) {
+      return true;
+    }
+
+    // 4. Full user name containment match (e.g. user.name === "Ramesh")
+    const cleanUserName = cleanString(user.name || '');
+    if (cleanUserName && cleanUserName.length > 3 && cleanItemOwner.includes(cleanUserName)) {
+      return true;
     }
 
     return false;
   };
 
   // Filter allocations to strictly show ONLY lands belonging to this logged-in farmer profile
-  const myAllocations = allocation.allocations.filter(a => matchFarmerAllocation(a.farmer_name, authUser));
+  const myAllocations = allocation.allocations.filter(a => matchFarmerAllocation(a, authUser));
 
   const displayedAllocations = myAllocations;
 
