@@ -163,10 +163,9 @@ export default function Home() {
     if (role === 'admin') return allocation;
     const myFarmIds = new Set(farms.map(f => f.id));
     if (myFarmIds.size === 0) return allocation; // fallback demo mode before farms load
-    const mine = allocation.allocations.filter(a => myFarmIds.has(a.farm_id));
-    if (mine.length === 0) return allocation;
+    const mine = allocation.allocations.filter(a => myFarmIds.has(a.farm_id) || (a.user_id && authUser?.user_id && a.user_id === authUser.user_id));
     return { ...allocation, allocations: mine };
-  }, [allocation, farms, role]);
+  }, [allocation, farms, role, authUser]);
 
   // Automatically derive active selectedFarmId: manual selection -> matching logged-in user farm -> first farm
   const selectedFarmId = React.useMemo(() => {
@@ -536,10 +535,11 @@ export default function Home() {
       });
       if (res.ok) {
         const newFarm = await res.json();
-        await refreshBackendData();
         if (newFarm && newFarm.id) {
+          setFarms(prev => [...prev.filter(f => f.id !== newFarm.id), newFarm]);
           setSelectedFarmId(newFarm.id);
         }
+        await refreshBackendData();
       } else {
         const errData = await res.json();
         throw new Error(errData.detail || "Failed to submit water request. 1 request allowed per farmer every 3 days.");
