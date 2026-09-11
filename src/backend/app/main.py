@@ -44,6 +44,16 @@ app.add_middleware(
 
 app.include_router(router)
 
+@app.get("/")
+def root():
+    return {
+        "platform": "PaaniPanchayat API",
+        "tagline": "Fair Water. Peaceful Farming.",
+        "status": "Online",
+        "docs_url": "/docs",
+        "api_url": "/api"
+    }
+
 @app.get("/api")
 def api_root():
     return {
