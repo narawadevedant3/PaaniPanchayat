@@ -35,7 +35,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [showRegPassword, setShowRegPassword] = useState(false);
-  const [regRole, setRegRole] = useState<UserRole>('farmer');
+  const regRole: UserRole = 'farmer';
   const [regContact, setRegContact] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
