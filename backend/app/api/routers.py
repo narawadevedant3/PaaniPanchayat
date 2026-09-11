@@ -1,0 +1,343 @@
+import datetime
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List, Dict, Any
+
+from app.database import get_db, engine, Base
+from app import models, schemas
+from app.services.water_requirement import calculate_water_requirement
+from app.services.weather_service import fetch_weather_data
+from app.services.optimizer import solve_water_allocation
+from app.services.agent_engine import agent_engine
+
+# Initialize tables
+Base.metadata.create_all(bind=engine)
+
+router = APIRouter(prefix="/api")
+
+# In-memory store for active allocation state during demo execution
+CURRENT_STATE = {
+    "water_source_available": 180000.0,
+    "last_allocation": None,
+    "disputes": [],
+    "audit_logs": []
+}
+
+def log_audit(db: Session, entity_type: str, entity_id: str, action: str, details: Any):
+    log = models.AuditLog(
+        entity_type=entity_type,
+        entity_id=str(entity_id),
+        action=action,
+        details=details
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    CURRENT_STATE["audit_logs"].insert(0, {
+        "id": log.id,
+        "entity_type": entity_type,
+        "entity_id": str(entity_id),
+        "action": action,
+        "details": details,
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    })
+    return log
+
+# --- DEMO RESET & SEED DATA ENDPOINT ---
+@router.post("/demo/reset")
+def reset_demo_data(db: Session = Depends(get_db)):
+    """
+    Resets the database with the exact PRD Section 29 4-Farm Demo Scenario.
+    """
+    db.query(models.AuditLog).delete()
+    db.query(models.Agreement).delete()
+    db.query(models.MediationSession).delete()
+    db.query(models.Dispute).delete()
+    db.query(models.Allocation).delete()
+    db.query(models.WaterRequirement).delete()
+    db.query(models.Crop).delete()
+    db.query(models.Farm).delete()
+    db.query(models.WaterSource).delete()
+    db.query(models.User).delete()
+    db.commit()
+
+    # Create Water Source
+    source = models.WaterSource(
+        name="Panchayat Shared Canal #1",
+        total_capacity_liters=300000.0,
+        available_volume_liters=180000.0,
+        status="Scarce"
+    )
+    db.add(source)
+    db.commit()
+
+    # Create Demo Farms (PRD Section 29)
+    demo_farms_input = [
+        {"name": "Ramesh (Farm A)", "crop": "Wheat", "area": 2.0, "soil": "Clay", "stage": "Flowering", "eff": 0.75, "prev_irr": 10000.0},
+        {"name": "Suresh (Farm B)", "crop": "Tomato", "area": 1.5, "soil": "Loam", "stage": "Fruit Development", "eff": 0.70, "prev_irr": 8000.0},
+        {"name": "Vijay (Farm C)", "crop": "Sugarcane", "area": 3.0, "soil": "Black", "stage": "Vegetative", "eff": 0.65, "prev_irr": 15000.0},
+        {"name": "Anish (Farm D)", "crop": "Onion", "area": 1.0, "soil": "Sandy", "stage": "Bulb Development", "eff": 0.80, "prev_irr": 5000.0}
+    ]
+
+    created_farms = []
+    farms_optimizer_input = []
+    total_demand = 0.0
+
+    for idx, f in enumerate(demo_farms_input, start=1):
+        user = models.User(name=f["name"], role="farmer", language="en")
+        db.add(user)
+        db.commit()
+
+        farm = models.Farm(
+            user_id=user.id,
+            farmer_name=f["name"],
+            location="Baramati Sector, MH",
+            area_acres=f["area"],
+            soil_type=f["soil"],
+            irrigation_efficiency=f["eff"],
+            is_critical_stage=(f["stage"] == "Flowering")
+        )
+        db.add(farm)
+        db.commit()
+
+        crop = models.Crop(
+            farm_id=farm.id,
+            name=f["crop"],
+            growth_stage=f["stage"],
+            criticality_score=1.5 if f["stage"] in ["Flowering", "Fruit Development"] else 1.0
+        )
+        db.add(crop)
+        db.commit()
+
+        req_calc = calculate_water_requirement(
+            crop_name=f["crop"],
+            area_acres=f["area"],
+            growth_stage=f["stage"],
+            soil_type=f["soil"],
+            irrigation_efficiency=f["eff"],
+            temperature_c=32.5,
+            rainfall_mm=0.0,
+            forecast_rainfall_mm=1.2,
+            previous_irrigation_liters=f["prev_irr"]
+        )
+
+        water_req = models.WaterRequirement(
+            farm_id=farm.id,
+            estimated_volume_liters=req_calc.final_estimated_liters,
+            breakdown=req_calc.dict()
+        )
+        db.add(water_req)
+        db.commit()
+
+        total_demand += req_calc.final_estimated_liters
+        created_farms.append(farm)
+
+        farms_optimizer_input.append({
+            "id": farm.id,
+            "farmer_name": f["name"],
+            "crop_name": f["crop"],
+            "area_acres": f["area"],
+            "growth_stage": f["stage"],
+            "required_liters": req_calc.final_estimated_liters,
+            "soil_type": f["soil"],
+            "is_critical_stage": (f["stage"] == "Flowering")
+        })
+
+    # Run OR-Tools Optimization v1
+    allocation_v1 = solve_water_allocation(
+        farms_data=farms_optimizer_input,
+        available_water_liters=180000.0,
+        version=1
+    )
+    CURRENT_STATE["last_allocation"] = allocation_v1
+
+    log_audit(db, "System", "DemoReset", "INITIALIZE_DEMO_SCENARIO", {
+        "farms_count": 4,
+        "available_water": 180000.0,
+        "total_demand": total_demand,
+        "shortage": max(total_demand - 180000.0, 0)
+    })
+
+    return {
+        "status": "success",
+        "message": "Loaded 4 Demo Farms with 180,000 L Available Water",
+        "allocation": allocation_v1
+    }
+
+# --- FARMS ENDPOINTS ---
+@router.get("/farms", response_model=List[schemas.FarmResponse])
+def get_farms(db: Session = Depends(get_db)):
+    farms = db.query(models.Farm).all()
+    res = []
+    for f in farms:
+        crop = db.query(models.Crop).filter(models.Crop.farm_id == f.id).first()
+        res.append(schemas.FarmResponse(
+            id=f.id,
+            farmer_name=f.farmer_name,
+            location=f.location,
+            latitude=f.latitude,
+            longitude=f.longitude,
+            area_acres=f.area_acres,
+            soil_type=f.soil_type,
+            irrigation_efficiency=f.irrigation_efficiency,
+            is_critical_stage=f.is_critical_stage,
+            emergency_priority=f.emergency_priority,
+            crop_name=crop.name if crop else "General Crop",
+            growth_stage=crop.growth_stage if crop else "Vegetative",
+            criticality_score=crop.criticality_score if crop else 1.0
+        ))
+    return res
+
+@router.post("/farms", response_model=schemas.FarmResponse)
+def create_farm(farm_in: schemas.FarmCreate, db: Session = Depends(get_db)):
+    user = models.User(name=farm_in.farmer_name, role="farmer")
+    db.add(user)
+    db.commit()
+
+    farm = models.Farm(
+        user_id=user.id,
+        farmer_name=farm_in.farmer_name,
+        location=farm_in.location,
+        latitude=farm_in.latitude,
+        longitude=farm_in.longitude,
+        area_acres=farm_in.area_acres,
+        soil_type=farm_in.soil_type,
+        irrigation_efficiency=farm_in.irrigation_efficiency,
+        is_critical_stage=farm_in.is_critical_stage,
+        emergency_priority=farm_in.emergency_priority
+    )
+    db.add(farm)
+    db.commit()
+
+    crop = models.Crop(
+        farm_id=farm.id,
+        name=farm_in.crop_name,
+        growth_stage=farm_in.growth_stage,
+        criticality_score=farm_in.criticality_score
+    )
+    db.add(crop)
+    db.commit()
+
+    # Calculate initial requirement
+    req_calc = calculate_water_requirement(
+        crop_name=farm_in.crop_name,
+        area_acres=farm_in.area_acres,
+        growth_stage=farm_in.growth_stage,
+        soil_type=farm_in.soil_type,
+        irrigation_efficiency=farm_in.irrigation_efficiency,
+        previous_irrigation_liters=farm_in.previous_irrigation_liters
+    )
+    water_req = models.WaterRequirement(
+        farm_id=farm.id,
+        estimated_volume_liters=req_calc.final_estimated_liters,
+        breakdown=req_calc.dict()
+    )
+    db.add(water_req)
+    db.commit()
+
+    log_audit(db, "Farm", str(farm.id), "REGISTER_FARM", {"farmer_name": farm_in.farmer_name, "area": farm_in.area_acres})
+
+    return schemas.FarmResponse(
+        id=farm.id,
+        farmer_name=farm.farmer_name,
+        location=farm.location,
+        latitude=farm.latitude,
+        longitude=farm.longitude,
+        area_acres=farm.area_acres,
+        soil_type=farm.soil_type,
+        irrigation_efficiency=farm.irrigation_efficiency,
+        is_critical_stage=farm.is_critical_stage,
+        emergency_priority=farm.emergency_priority,
+        crop_name=crop.name,
+        growth_stage=crop.growth_stage,
+        criticality_score=crop.criticality_score
+    )
+
+# --- WEATHER ENDPOINT ---
+@router.post("/weather")
+async def get_weather(lat: float = 18.5204, lon: float = 73.8567):
+    return await fetch_weather_data(lat, lon)
+
+# --- WATER REQUIREMENT CALCULATION ENDPOINT ---
+@router.post("/water-requirement/calculate", response_model=schemas.WaterRequirementResponse)
+def calculate_req_endpoint(req: schemas.WaterRequirementCalculationRequest):
+    breakdown = calculate_water_requirement(
+        crop_name=req.crop_name,
+        area_acres=req.area_acres,
+        growth_stage=req.growth_stage,
+        soil_type=req.soil_type,
+        irrigation_efficiency=req.irrigation_efficiency,
+        temperature_c=req.temperature_c,
+        rainfall_mm=req.rainfall_mm,
+        forecast_rainfall_mm=req.forecast_rainfall_mm,
+        previous_irrigation_liters=req.previous_irrigation_liters
+    )
+    return schemas.WaterRequirementResponse(
+        farm_id=req.farm_id,
+        estimated_volume_liters=breakdown.final_estimated_liters,
+        breakdown=breakdown
+    )
+
+# --- ALLOCATION & OPTIMIZATION ENDPOINT ---
+@router.post("/allocation/generate", response_model=schemas.AllocationResult)
+def generate_allocation_endpoint(db: Session = Depends(get_db)):
+    farms = db.query(models.Farm).all()
+    farms_data = []
+    for f in farms:
+        crop = db.query(models.Crop).filter(models.Crop.farm_id == f.id).first()
+        req = db.query(models.WaterRequirement).filter(models.WaterRequirement.farm_id == f.id).order_by(models.WaterRequirement.id.desc()).first()
+        req_vol = req.estimated_volume_liters if req else 50000.0
+        farms_data.append({
+            "id": f.id,
+            "farmer_name": f.farmer_name,
+            "crop_name": crop.name if crop else "Crop",
+            "area_acres": f.area_acres,
+            "growth_stage": crop.growth_stage if crop else "Vegetative",
+            "required_liters": req_vol,
+            "soil_type": f.soil_type,
+            "is_critical_stage": f.is_critical_stage
+        })
+
+    allocation = solve_water_allocation(farms_data, available_water_liters=CURRENT_STATE["water_source_available"], version=1)
+    CURRENT_STATE["last_allocation"] = allocation
+    log_audit(db, "Allocation", "v1", "GENERATE_INITIAL_ALLOCATION", {"is_conflict": allocation.is_conflict, "shortage": allocation.shortage_liters})
+    return allocation
+
+# --- MEDIATION & DISPUTE ENDPOINTS ---
+@router.post("/mediation/propose", response_model=schemas.MediationProposalResponse)
+def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends(get_db)):
+    current_alloc = CURRENT_STATE["last_allocation"]
+    if not current_alloc:
+        # Fallback reset if needed
+        reset_demo_data(db)
+        current_alloc = CURRENT_STATE["last_allocation"]
+
+    proposal = agent_engine.run_mediation_workflow(
+        dispute_id=1,
+        farmer_name=objection.farmer_name,
+        farm_id=objection.farm_id,
+        objection_text=objection.objection_reason,
+        current_allocation_result=current_alloc,
+        requested_additional_liters=objection.requested_additional_liters
+    )
+
+    CURRENT_STATE["last_allocation"] = proposal.revised_allocation
+    log_audit(db, "Dispute", str(objection.farm_id), "AI_MEDIATION_PROPOSAL", {
+        "farmer": objection.farmer_name,
+        "objection": objection.objection_reason,
+        "validated": proposal.is_validated_by_optimizer
+    })
+    return proposal
+
+@router.post("/agreements/accept")
+def accept_agreement(version: int = 1, db: Session = Depends(get_db)):
+    agreement = models.Agreement(allocation_version=version, status="Accepted")
+    db.add(agreement)
+    db.commit()
+    log_audit(db, "Agreement", f"v{version}", "ACCEPT_FINAL_AGREEMENT", {"status": "Accepted", "accepted_at": datetime.datetime.utcnow().isoformat()})
+    return {"status": "success", "message": f"Allocation Version {version} Accepted and Saved to Immutable Audit Log!"}
+
+# --- AUDIT LOGS ENDPOINT ---
+@router.get("/audit")
+def get_audit_trail(db: Session = Depends(get_db)):
+    return CURRENT_STATE["audit_logs"]
