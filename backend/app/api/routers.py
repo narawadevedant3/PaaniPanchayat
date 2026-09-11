@@ -282,9 +282,11 @@ def get_farms(db: Session = Depends(get_db)):
 
 @router.post("/farms", response_model=schemas.FarmResponse)
 def create_farm(farm_in: schemas.FarmCreate, db: Session = Depends(get_db)):
-    user = models.User(name=farm_in.farmer_name, role="farmer")
-    db.add(user)
-    db.commit()
+    user = db.query(models.User).filter(models.User.name == farm_in.farmer_name).first()
+    if not user:
+        user = models.User(name=farm_in.farmer_name, role="farmer")
+        db.add(user)
+        db.commit()
 
     farm = models.Farm(
         user_id=user.id,

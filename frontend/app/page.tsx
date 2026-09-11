@@ -290,8 +290,13 @@ export default function Home() {
   // Add New Farm
   const handleAddFarm = async (farmData: any) => {
     try {
+      const ownerName = authUser?.name ? authUser.name.split('(')[0].trim() : 'Farmer';
+      const farmTitle = farmData.farmer_name || 'New Plot';
+      const formattedFarmerName = `${ownerName} (${farmTitle})`;
+
       const payload = {
         ...farmData,
+        farmer_name: formattedFarmerName,
         user_id: authUser?.user_id || undefined
       };
       const res = await fetch(`${API_BASE}/farms`, {
@@ -341,6 +346,7 @@ export default function Home() {
             onAcceptAllocation={handleAcceptAllocation}
             onOpenAddFarmModal={() => setShowAddFarmModal(true)}
             isAccepted={isAccepted}
+            authUser={authUser}
           />
         ) : (
           <AdminDashboard

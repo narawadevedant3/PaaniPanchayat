@@ -25,11 +25,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Handle Login Submission
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSuccessMsg(null);
     setIsLoading(true);
 
     try {
@@ -62,6 +64,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setSuccessMsg(null);
     setIsLoading(true);
 
     try {
@@ -83,13 +86,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         throw new Error(data.detail || 'Registration failed');
       }
 
-      onLoginSuccess({
-        user_id: data.user_id,
-        name: data.name,
-        email: data.email,
-        role: data.role as UserRole,
-        token: data.token
-      });
+      // On successful registration, switch to Sign In tab & populate email
+      setLoginEmail(regEmail);
+      setLoginPassword('');
+      setActiveTab('login');
+      setSuccessMsg('Account registered successfully! Please sign in with your password.');
     } catch (err: any) {
       setErrorMsg(err.message || 'Unable to register account.');
     } finally {
@@ -180,6 +181,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
             Register
           </button>
         </div>
+
+        {/* Success Alert */}
+        {successMsg && (
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+        )}
 
         {/* Error Alert */}
         {errorMsg && (

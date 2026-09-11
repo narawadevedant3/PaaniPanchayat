@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { AllocationResult, Farm, AllocationItem } from '../types';
+import { AllocationResult, Farm, AllocationItem, AuthUser } from '../types';
 import { Droplets, Calendar, Clock, AlertTriangle, Scale, CheckCircle2, HelpCircle, MessageSquarePlus, ChevronRight, Sprout, Sun, CloudRain, ShieldCheck, Home, User, BarChart2, MessageSquare, Check, ArrowRight } from 'lucide-react';
 
 interface FarmerDashboardProps {
@@ -15,6 +15,7 @@ interface FarmerDashboardProps {
   onAcceptAllocation: (version: number) => void;
   onOpenAddFarmModal: () => void;
   isAccepted: boolean;
+  authUser?: AuthUser | null;
 }
 
 export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
@@ -26,7 +27,8 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   onOpenObjectionModal,
   onAcceptAllocation,
   onOpenAddFarmModal,
-  isAccepted
+  isAccepted,
+  authUser
 }) => {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'home' | 'farm' | 'water' | 'mediation' | 'profile'>('home');
@@ -41,9 +43,31 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
     );
   }
 
+  // Extract primary owner identifier (e.g. "Ramesh" from "Ramesh (Farmer)" or "Ramesh (Farm A)")
+  const extractPrimaryName = (fullName?: string) => {
+    if (!fullName) return '';
+    const clean = fullName.split('(')[0].trim();
+    return clean.split(' ')[0].toLowerCase().trim();
+  };
+
+  const loggedInFirstName = extractPrimaryName(authUser?.name) || extractPrimaryName(allocation.allocations[0]?.farmer_name);
+
+  // Filter allocations to only show lands belonging to this logged-in farmer account
+  const myAllocations = allocation.allocations.filter(a => {
+    if (!loggedInFirstName) return true;
+    const farmOwnerFirstName = extractPrimaryName(a.farmer_name);
+    return farmOwnerFirstName === loggedInFirstName || 
+           a.farmer_name.toLowerCase().includes(loggedInFirstName) ||
+           a.farm_id === selectedFarmId;
+  });
+
+  const displayedAllocations = myAllocations.length > 0 ? myAllocations : [allocation.allocations[0]];
+
   // Active farm selected dynamically in Farmer view
-  const currentAllocationItem = allocation.allocations.find(a => a.farm_id === selectedFarmId) || allocation.allocations[0];
+  const currentAllocationItem = displayedAllocations.find(a => a.farm_id === selectedFarmId) || displayedAllocations[0];
   const activeFarm = farms.find(f => f.id === currentAllocationItem.farm_id);
+
+  const farmerGreetingName = authUser?.name || currentAllocationItem.farmer_name;
 
   const reqLiters = currentAllocationItem.required_liters;
   const allocLiters = currentAllocationItem.allocated_liters;
@@ -66,14 +90,14 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <h2 className="text-xl font-extrabold text-white">
-                {language === 'mr' ? `नमस्कार, ${currentAllocationItem.farmer_name}` : language === 'hi' ? `नमस्ते, ${currentAllocationItem.farmer_name}` : `Welcome, ${currentAllocationItem.farmer_name}`}
+                {language === 'mr' ? `नमस्कार, ${farmerGreetingName}` : language === 'hi' ? `नमस्ते, ${farmerGreetingName}` : `Welcome, ${farmerGreetingName}`}
               </h2>
               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-100 font-semibold">
                 {currentAllocationItem.crop_name} ({currentAllocationItem.area_acres} Acres)
               </span>
             </div>
             <p className="text-xs text-emerald-100 mt-0.5">
-              {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Farm details and water allocations are active below.'}
+              Viewing parcel: <strong>{currentAllocationItem.farmer_name}</strong> — {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Farm details and water allocations are active below.'}
             </p>
           </div>
         </div>
@@ -88,10 +112,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
         </div>
       </div>
 
-      {/* Main Grid: Water Requirement Details & Conflict Status (Screens 4 & 5) */}
+      {/* Main Grid: Water Requirement Details & Allocation Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* 4. Water Requirement Details Card (Ref UI Screen 4) */}
+        {/* 4. Water Requirement Details Card */}
         <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
@@ -112,7 +136,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
             </div>
           </div>
 
-          {/* Breakdown Factor Adjustments (Screen 4 Layout) */}
+          {/* Breakdown Factor Adjustments */}
           <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs my-4">
             <div className="p-2.5 bg-white rounded-xl border border-slate-100">
               <span className="text-[10px] text-slate-500 font-bold uppercase block">बेस गरज (Base)</span>
@@ -136,38 +160,21 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </button>
         </div>
 
-        {/* 5. Shared Water & Conflict Detection (Ref UI Screen 5) */}
-        <div className="bg-white p-6 rounded-3xl border border-rose-200 shadow-sm relative">
+        {/* 5. Allocation & Schedule Summary (Cleaned - Conflict Alert Removed) */}
+        <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm relative flex flex-col justify-between">
           
-          {/* Conflict Banner Header */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 flex items-center gap-1.5">
-              <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
-              <span>सामायिक पाण्याची स्थिती (Conflict Alert)</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              <span>सिंचन वाटप (Allocated Water)</span>
             </span>
             <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
               v{allocation.version}
             </span>
           </div>
 
-          {/* Shortage Stats Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center p-3 bg-rose-50/50 rounded-2xl border border-rose-100 my-3">
-            <div>
-              <span className="text-[10px] text-slate-500 font-bold block">एकूण मागणी</span>
-              <span className="text-sm sm:text-base font-extrabold text-slate-900">{allocation.total_demand_liters.toLocaleString()} L</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-blue-600 font-bold block">उपलब्ध पाणी</span>
-              <span className="text-sm sm:text-base font-extrabold text-blue-700">{allocation.available_volume_liters.toLocaleString()} L</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-rose-600 font-bold block">तूट (Shortage)</span>
-              <span className="text-sm sm:text-base font-extrabold text-rose-600">{allocation.shortage_liters.toLocaleString()} L</span>
-            </div>
-          </div>
-
           {/* Outcome Allocation Summary */}
-          <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 mt-3">
+          <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 my-auto">
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[11px] text-emerald-800 font-bold uppercase tracking-wider">{t('yourAllocation')}</span>
@@ -182,12 +189,12 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               </div>
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-emerald-200/70 flex items-center justify-between text-xs text-slate-700">
+            <div className="mt-4 pt-3 border-t border-emerald-200/70 flex items-center justify-between text-xs text-slate-700">
               <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-emerald-600" />
                 <span><strong>{t('timeSlot')}:</strong> {currentAllocationItem.schedule_start} – {currentAllocationItem.schedule_end}</span>
               </div>
-              <span className="px-2 py-0.5 rounded bg-white text-emerald-800 font-mono text-[10px] border border-emerald-200">Canal Turn</span>
+              <span className="px-2.5 py-1 rounded bg-white text-emerald-800 font-mono text-[10px] border border-emerald-200 font-bold">Canal Turn Active</span>
             </div>
           </div>
 
@@ -195,7 +202,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
       </div>
 
-      {/* 6 & 8. Allocation Matrix Table for Logged-In Farmer Only */}
+      {/* 6 & 8. Allocation Matrix Table - Showing All Farms of Logged-In Farmer */}
       <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm space-y-4">
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -206,7 +213,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
                 OR-Tools Verified
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">Showing verified allocation for logged-in farmer account.</p>
+            <p className="text-xs text-slate-500 mt-0.5">Showing all registered farm parcels and water allocations for your account.</p>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -216,12 +223,12 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </div>
         </div>
 
-        {/* Allocations Table - Logged In Farmer Only */}
+        {/* Allocations Table - All Farms of Logged-In Farmer */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-800">
             <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
               <tr>
-                <th className="p-3">शेतकरी (Farmer)</th>
+                <th className="p-3">शेत / जमीन (Farm Title)</th>
                 <th className="p-3">पीक व टप्पा</th>
                 <th className="p-3">मागणी (Req)</th>
                 <th className="p-3">वाटप (Allocated)</th>
@@ -230,23 +237,35 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              <tr className="bg-emerald-50/50 font-semibold border-l-4 border-emerald-600">
-                <td className="p-3 font-bold text-slate-900 flex items-center space-x-2">
-                  <span>👨‍🌾 {currentAllocationItem.farmer_name}</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-bold">Active</span>
-                </td>
-                <td className="p-3 text-slate-700">
-                  {currentAllocationItem.crop_name} <span className="text-[10px] text-emerald-700">({currentAllocationItem.growth_stage})</span>
-                </td>
-                <td className="p-3 font-mono text-slate-600">{currentAllocationItem.required_liters.toLocaleString()} L</td>
-                <td className="p-3 font-bold text-emerald-700 font-mono">{currentAllocationItem.allocated_liters.toLocaleString()} L</td>
-                <td className="p-3 text-rose-600 font-mono">{currentAllocationItem.unmet_liters.toLocaleString()} L</td>
-                <td className="p-3 text-right">
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
-                    {currentAllocationItem.fairness_score}/100
-                  </span>
-                </td>
-              </tr>
+              {displayedAllocations.map((item, idx) => (
+                <tr
+                  key={item.farm_id || idx}
+                  onClick={() => setSelectedFarmId(item.farm_id)}
+                  className={`cursor-pointer transition-colors ${
+                    item.farm_id === selectedFarmId
+                      ? 'bg-emerald-50/70 font-semibold border-l-4 border-emerald-600'
+                      : 'hover:bg-slate-50'
+                  }`}
+                >
+                  <td className="p-3 font-bold text-slate-900 flex items-center space-x-2">
+                    <span>🌾 {item.farmer_name}</span>
+                    {item.farm_id === selectedFarmId && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-bold">Active</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-slate-700">
+                    {item.crop_name} <span className="text-[10px] text-emerald-700">({item.growth_stage} — {item.area_acres} Acres)</span>
+                  </td>
+                  <td className="p-3 font-mono text-slate-600">{item.required_liters.toLocaleString()} L</td>
+                  <td className="p-3 font-bold text-emerald-700 font-mono">{item.allocated_liters.toLocaleString()} L</td>
+                  <td className="p-3 text-rose-600 font-mono">{item.unmet_liters.toLocaleString()} L</td>
+                  <td className="p-3 text-right">
+                    <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                      {item.fairness_score}/100
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

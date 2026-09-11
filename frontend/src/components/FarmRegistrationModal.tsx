@@ -60,11 +60,11 @@ export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ on
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           
           <div>
-            <label className="text-slate-700 font-bold block mb-1">Farmer Name:</label>
+            <label className="text-slate-700 font-bold block mb-1">Farm Name / Plot Title:</label>
             <input
               type="text"
               required
-              placeholder="e.g. Dnyaneshwar Patil"
+              placeholder="e.g. North Canal Plot 1"
               value={formData.farmer_name}
               onChange={(e) => setFormData({ ...formData, farmer_name: e.target.value })}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-emerald-500"
