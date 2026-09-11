@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useState } from 'react';
-import { Droplet, Lock, Mail, User, ShieldCheck, Phone, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Droplet, Lock, Mail, User, ShieldCheck, Phone, ArrowRight, Sparkles, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AuthUser, UserRole } from '../types';
 
 interface AuthViewProps {
@@ -15,11 +13,13 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register form state
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [regRole, setRegRole] = useState<UserRole>('farmer');
   const [regContact, setRegContact] = useState('');
 
@@ -221,13 +221,21 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                 <input
-                  type="password"
+                  type={showLoginPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600"
+                  className="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  title={showLoginPassword ? "Hide password" : "Show password"}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -286,13 +294,21 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                 <input
-                  type="password"
+                  type={showRegPassword ? "text" : "password"}
                   required
                   placeholder="Create a strong password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600"
+                  className="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(!showRegPassword)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  title={showRegPassword ? "Hide password" : "Show password"}
+                >
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
