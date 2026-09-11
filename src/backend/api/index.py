@@ -1,15 +1,12 @@
 import sys
 from pathlib import Path
 
-# Ensure the root directory of the backend repository is in sys.path
+# Ensure root directory is on sys.path for Vercel imports
 root_dir = Path(__file__).resolve().parent.parent
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
-# Import app for standalone backend repo (Vercel) & fallback for monorepo linter
-try:
-    from app.main import app  # type: ignore
-except ImportError:
-    from backend.app.main import app  # type: ignore
+from app.main import app as _app
 
-__all__ = ["app"]
+# Top-level 'app' variable for Vercel @vercel/python serverless builder
+app = _app
