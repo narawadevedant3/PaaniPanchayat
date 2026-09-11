@@ -3,11 +3,46 @@
 :root {
   --background: #f2f6f4;
   --foreground: #0f172a;
+
+  --color-canal: #1F6F6A;        /* primary: header, nav, primary buttons, links */
+  --color-canal-hover: #195955;  /* hover state for primary elements */
+  --color-soil: #B5651D;         /* secondary: avatars, farmer/user identity */
+  --color-wheat: #D9A441;        /* highlight: schedules, allocations, key data */
+  --color-wheat-bg: #FCF5E8;     /* subtle highlight badge background */
+  --color-dispute: #B23A2E;      /* alert only: conflict/objection states */
+  --color-dispute-bg: #F7E6E2;   /* background for dispute/alert cards */
+  --color-agreement: #4F7942;    /* success: resolved/agreed states */
+  --color-agreement-bg: #E9F1E4; /* background for agreement/success cards */
+  --color-bg: #f2f6f4;           /* page background */
+  --color-surface: #FFFFFF;      /* card backgrounds */
+  --color-surface-subtle: #FAF7F0; /* inner card / table header surfaces */
+  --color-border: #DDD6C4;       /* borders */
+  --color-text-primary: #0f172a; /* main text */
+  --color-text-secondary: #5C5849; /* muted/secondary text */
+}
+
+@theme {
+  --color-canal: var(--color-canal);
+  --color-canal-hover: var(--color-canal-hover);
+  --color-soil: var(--color-soil);
+  --color-wheat: var(--color-wheat);
+  --color-wheat-bg: var(--color-wheat-bg);
+  --color-dispute: var(--color-dispute);
+  --color-dispute-bg: var(--color-dispute-bg);
+  --color-agreement: var(--color-agreement);
+  --color-agreement-bg: var(--color-agreement-bg);
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-subtle: var(--color-surface-subtle);
+  --color-border: var(--color-border);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
 }
 
 body {
-  background-color: #f2f6f4;
-  color: #0f172a;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
 }
-
