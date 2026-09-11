@@ -114,6 +114,8 @@ def log_audit(db: Session, entity_type: str, entity_id: str, action: str, detail
     return log
 
 # --- AUTHENTICATION ENDPOINTS ---
+REGISTERED_USERS_CACHE: Dict[str, Dict[str, Any]] = {}
+
 @router.post("/auth/register", response_model=schemas.AuthResponse)
 def register_user(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
     email_clean = user_in.email.lower().strip()
@@ -136,6 +138,16 @@ def register_user(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     
+    REGISTERED_USERS_CACHE[email_clean] = {
+        "id": new_user.id,
+        "name": new_user.name,
+        "email": email_clean,
+        "hashed_password": hashed_pwd,
+        "role": new_user.role,
+        "contact": new_user.contact,
+        "language": new_user.language
+    }
+
     token = create_access_token(new_user.id, new_user.email, new_user.role, new_user.name)
     log_audit(db, "User", str(new_user.id), "REGISTER_USER", {"email": new_user.email, "role": new_user.role})
     
@@ -155,6 +167,21 @@ def login_user(login_in: schemas.UserLogin, db: Session = Depends(get_db)):
     pwd_clean = login_in.password.strip()
     user = db.query(models.User).filter(models.User.email == email_clean).first()
     
+    # Restore user from cache if Vercel serverless cold-start reset SQLite in /tmp
+    if not user and email_clean in REGISTERED_USERS_CACHE:
+        cached = REGISTERED_USERS_CACHE[email_clean]
+        user = models.User(
+            name=cached["name"],
+            email=cached["email"],
+            hashed_password=cached["hashed_password"],
+            role=cached["role"],
+            contact=cached.get("contact"),
+            language=cached.get("language", "en")
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email address or password")
     

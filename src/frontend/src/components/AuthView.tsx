@@ -105,16 +105,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         throw new Error(data.detail || 'Registration failed');
       }
 
-      // DO NOT navigate immediately to farmer page!
-      // Save is committed to database by backend. Switch to Sign In tab, pre-fill email, and display success message.
-      setLoginEmail(emailToRegister);
-      setLoginPassword('');
-      setRegName('');
-      setRegEmail('');
-      setRegPassword('');
-      setRegContact('');
-      setActiveTab('login');
-      setSuccessMsg(t('registrationSuccessMsg'));
+      // Auto sign-in and navigate to dashboard with returned token
+      onLoginSuccess({
+        user_id: data.user_id,
+        name: data.name,
+        email: data.email,
+        role: data.role as UserRole,
+        token: data.token
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unable to register account.';
       setErrorMsg(msg);
