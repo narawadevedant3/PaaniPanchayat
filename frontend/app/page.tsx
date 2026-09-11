@@ -316,7 +316,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-emerald-950 font-sans">
+    <div className="min-h-screen flex flex-col bg-[#f2f6f4] text-slate-900 font-sans">
       
       {/* Header Navigation */}
       <Navbar
@@ -376,8 +376,8 @@ export default function Home() {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-emerald-900 bg-emerald-950/80 p-4 text-center text-xs text-emerald-400/80">
-        <p>PaaniPanchayat — AI-Powered Water Sharing & Dispute Mediation Platform for Farmers (PS14 Hackathon MVP)</p>
+      <footer className="border-t border-emerald-100 bg-white p-4 text-center text-xs text-slate-500 shadow-inner">
+        <p className="font-medium">PaaniPanchayat — AI-Powered Water Sharing & Dispute Mediation Platform for Farmers (PS14 Hackathon MVP)</p>
       </footer>
 
     </div>

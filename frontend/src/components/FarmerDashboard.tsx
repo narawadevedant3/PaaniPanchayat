@@ -33,10 +33,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
   if (!allocation || !allocation.allocations || allocation.allocations.length === 0) {
     return (
-      <div className="p-8 text-center bg-emerald-950/40 rounded-2xl border border-emerald-800/40 my-8">
-        <Droplets className="h-12 w-12 text-cyan-400 mx-auto animate-bounce mb-3" />
-        <h3 className="text-xl font-bold text-white">Loading Water Allocation Data...</h3>
-        <p className="text-sm text-emerald-300 mt-1">Estimating farm requirements and running OR-Tools optimizer.</p>
+      <div className="p-8 text-center bg-white rounded-2xl border border-emerald-100 shadow-sm my-8">
+        <Droplets className="h-12 w-12 text-emerald-600 mx-auto animate-bounce mb-3" />
+        <h3 className="text-xl font-bold text-slate-900">Loading Water Allocation Data...</h3>
+        <p className="text-sm text-slate-600 mt-1">Estimating farm requirements and running OR-Tools optimizer.</p>
       </div>
     );
   }
@@ -52,23 +52,15 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
   const shortagePct = Math.round((allocation.shortage_liters / allocation.total_demand_liters) * 100);
 
-  // Helper colors for irrigation schedule timeline cards
-  const scheduleColors = [
-    { border: 'border-rose-500/60', text: 'text-rose-400', bg: 'bg-rose-950/40', badge: '🔴' },
-    { border: 'border-amber-500/60', text: 'text-amber-400', bg: 'bg-amber-950/40', badge: '🟠' },
-    { border: 'border-emerald-500/60', text: 'text-emerald-400', bg: 'bg-emerald-950/40', badge: '🟢' },
-    { border: 'border-cyan-500/60', text: 'text-cyan-400', bg: 'bg-cyan-950/40', badge: '🔵' }
-  ];
-
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans">
+    <div className="space-y-6 max-w-5xl mx-auto pb-24 font-sans text-slate-900">
       
       {/* 3. Farmer Dashboard Header Card (Ref UI Screen 3) */}
-      <div className="bg-gradient-to-r from-emerald-900/80 via-teal-950 to-emerald-950 backdrop-blur-md p-5 rounded-3xl border border-emerald-700/50 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-emerald-700 text-white p-6 rounded-3xl shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-emerald-400 p-0.5 shadow-lg flex items-center justify-center shrink-0">
-            <div className="h-full w-full bg-emerald-950 rounded-[14px] flex items-center justify-center">
-              <Sprout className="h-6 w-6 text-cyan-400" />
+          <div className="h-12 w-12 rounded-2xl bg-white/20 p-0.5 flex items-center justify-center shrink-0">
+            <div className="h-full w-full bg-white rounded-[14px] flex items-center justify-center">
+              <Sprout className="h-6 w-6 text-emerald-700" />
             </div>
           </div>
           <div>
@@ -76,21 +68,20 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               <h2 className="text-xl font-extrabold text-white">
                 {language === 'mr' ? `नमस्कार, ${currentAllocationItem.farmer_name}` : language === 'hi' ? `नमस्ते, ${currentAllocationItem.farmer_name}` : `Welcome, ${currentAllocationItem.farmer_name}`}
               </h2>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800/80 text-cyan-300 font-semibold border border-emerald-600/40">
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-800 text-emerald-100 font-semibold">
                 {currentAllocationItem.crop_name} ({currentAllocationItem.area_acres} Acres)
               </span>
             </div>
-            <p className="text-xs text-emerald-300/90 mt-0.5">
+            <p className="text-xs text-emerald-100 mt-0.5">
               {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Farm details and water allocations are active below.'}
             </p>
           </div>
         </div>
 
-        {/* Add Farm Button (Farmer select dropdown removed) */}
         <div className="flex items-center space-x-2 w-full md:w-auto justify-end">
           <button
             onClick={onOpenAddFarmModal}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white text-xs font-bold transition shadow-md flex items-center space-x-1.5"
+            className="px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-sm flex items-center space-x-1.5"
           >
             <span>+ Add Farm</span>
           </button>
@@ -101,102 +92,102 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* 4. Water Requirement Details Card (Ref UI Screen 4) */}
-        <div className="bg-gradient-to-br from-emerald-900/60 to-teal-950/80 backdrop-blur-md p-6 rounded-3xl border border-emerald-700/50 shadow-xl relative overflow-hidden group">
+        <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
               {t('waterNeedTitle')} (पाणी गरज)
             </span>
-            <span className="text-xs text-emerald-300 font-medium flex items-center gap-1 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800">
-              <Sun className="h-3.5 w-3.5 text-amber-400" /> 32°C Warm & Dry
+            <span className="text-xs text-amber-700 font-medium flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+              <Sun className="h-3.5 w-3.5 text-amber-500" /> 32°C Warm & Dry
             </span>
           </div>
 
           <div className="my-4">
-            <p className="text-xs text-emerald-300 uppercase tracking-wider font-bold">{t('estimatedNeed')}</p>
+            <p className="text-xs text-slate-500 uppercase tracking-wider font-bold">{t('estimatedNeed')}</p>
             <div className="flex items-baseline space-x-2 my-1">
-              <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+              <span className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900">
                 {reqLiters.toLocaleString()}
               </span>
-              <span className="text-lg text-cyan-300 font-bold">{t('liters')}</span>
+              <span className="text-lg text-emerald-600 font-bold">{t('liters')}</span>
             </div>
           </div>
 
           {/* Breakdown Factor Adjustments (Screen 4 Layout) */}
-          <div className="grid grid-cols-2 gap-2 p-3 bg-emerald-950/80 rounded-2xl border border-emerald-800/60 text-xs my-4">
-            <div className="p-2 bg-emerald-900/40 rounded-xl">
-              <span className="text-[10px] text-emerald-400 font-bold uppercase block">बेस गरज (Base)</span>
-              <span className="text-sm font-extrabold text-white">{(reqLiters * 0.95).toFixed(0)} L</span>
+          <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs my-4">
+            <div className="p-2.5 bg-white rounded-xl border border-slate-100">
+              <span className="text-[10px] text-slate-500 font-bold uppercase block">बेस गरज (Base)</span>
+              <span className="text-sm font-extrabold text-slate-800">{(reqLiters * 0.95).toFixed(0)} L</span>
             </div>
-            <div className="p-2 bg-emerald-900/40 rounded-xl">
-              <span className="text-[10px] text-cyan-400 font-bold uppercase block">वाढीचा टप्पा (Stage)</span>
-              <span className="text-sm font-extrabold text-cyan-300">+12% ({currentAllocationItem.growth_stage})</span>
+            <div className="p-2.5 bg-white rounded-xl border border-slate-100">
+              <span className="text-[10px] text-emerald-600 font-bold uppercase block">वाढीचा टप्पा (Stage)</span>
+              <span className="text-sm font-extrabold text-emerald-700">+12% ({currentAllocationItem.growth_stage})</span>
             </div>
           </div>
 
           <button
             onClick={() => onOpenWhyModal(currentAllocationItem)}
-            className="w-full py-2.5 px-4 rounded-xl bg-emerald-800/70 hover:bg-emerald-700 text-emerald-100 text-xs font-bold flex items-center justify-between border border-emerald-600/40 transition shadow-sm"
+            className="w-full py-2.5 px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-between border border-emerald-200 transition"
           >
             <span className="flex items-center space-x-2">
-              <HelpCircle className="h-4 w-4 text-cyan-400" />
+              <HelpCircle className="h-4 w-4 text-emerald-600" />
               <span>{t('whyThisAmount')} (कारण पाहा)</span>
             </span>
-            <ChevronRight className="h-4 w-4 text-emerald-300" />
+            <ChevronRight className="h-4 w-4 text-emerald-600" />
           </button>
         </div>
 
         {/* 5. Shared Water & Conflict Detection (Ref UI Screen 5) */}
-        <div className="bg-gradient-to-br from-slate-900/80 via-emerald-950 to-teal-950 backdrop-blur-md p-6 rounded-3xl border border-amber-600/40 shadow-xl relative">
+        <div className="bg-white p-6 rounded-3xl border border-rose-200 shadow-sm relative">
           
           {/* Conflict Banner Header */}
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-300 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 flex items-center gap-1.5">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 flex items-center gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
               <span>सामायिक पाण्याची स्थिती (Conflict Alert)</span>
             </span>
-            <span className="text-[11px] text-amber-300 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-700/50">
+            <span className="text-[11px] text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
               v{allocation.version}
             </span>
           </div>
 
           {/* Shortage Stats Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center p-3 bg-amber-950/40 rounded-2xl border border-amber-800/40 my-3">
+          <div className="grid grid-cols-3 gap-2 text-center p-3 bg-rose-50/50 rounded-2xl border border-rose-100 my-3">
             <div>
-              <span className="text-[10px] text-emerald-300 font-bold block">एकूण मागणी</span>
-              <span className="text-sm sm:text-base font-extrabold text-white">{allocation.total_demand_liters.toLocaleString()} L</span>
+              <span className="text-[10px] text-slate-500 font-bold block">एकूण मागणी</span>
+              <span className="text-sm sm:text-base font-extrabold text-slate-900">{allocation.total_demand_liters.toLocaleString()} L</span>
             </div>
             <div>
-              <span className="text-[10px] text-cyan-300 font-bold block">उपलब्ध पाणी</span>
-              <span className="text-sm sm:text-base font-extrabold text-cyan-300">{allocation.available_volume_liters.toLocaleString()} L</span>
+              <span className="text-[10px] text-blue-600 font-bold block">उपलब्ध पाणी</span>
+              <span className="text-sm sm:text-base font-extrabold text-blue-700">{allocation.available_volume_liters.toLocaleString()} L</span>
             </div>
             <div>
-              <span className="text-[10px] text-amber-400 font-bold block">तूट (Shortage)</span>
-              <span className="text-sm sm:text-base font-extrabold text-amber-400">{allocation.shortage_liters.toLocaleString()} L</span>
+              <span className="text-[10px] text-rose-600 font-bold block">तूट (Shortage)</span>
+              <span className="text-sm sm:text-base font-extrabold text-rose-600">{allocation.shortage_liters.toLocaleString()} L</span>
             </div>
           </div>
 
           {/* Outcome Allocation Summary */}
-          <div className="bg-emerald-950/80 p-4 rounded-2xl border border-emerald-700/60 mt-3">
+          <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 mt-3">
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider">{t('yourAllocation')}</span>
+                <span className="text-[11px] text-emerald-800 font-bold uppercase tracking-wider">{t('yourAllocation')}</span>
                 <div className="flex items-baseline space-x-2 mt-0.5">
-                  <span className="text-3xl font-black text-cyan-300">{allocLiters.toLocaleString()}</span>
-                  <span className="text-xs text-emerald-200 font-bold">{t('liters')}</span>
+                  <span className="text-3xl font-black text-emerald-700">{allocLiters.toLocaleString()}</span>
+                  <span className="text-xs text-slate-600 font-bold">{t('liters')}</span>
                 </div>
               </div>
-              <div className="text-right bg-emerald-900/60 px-3 py-1.5 rounded-xl border border-emerald-700">
-                <span className="text-[10px] text-emerald-300 uppercase font-bold block">{t('fairnessScore')}</span>
-                <span className="text-xl font-black text-emerald-200">{fairness}/100</span>
+              <div className="text-right bg-white px-3 py-1.5 rounded-xl border border-emerald-200 shadow-sm">
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">{t('fairnessScore')}</span>
+                <span className="text-xl font-black text-emerald-700">{fairness}/100</span>
               </div>
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-emerald-800/60 flex items-center justify-between text-xs text-emerald-200">
+            <div className="mt-3 pt-2.5 border-t border-emerald-200/70 flex items-center justify-between text-xs text-slate-700">
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-cyan-400" />
+                <Clock className="h-4 w-4 text-emerald-600" />
                 <span><strong>{t('timeSlot')}:</strong> {currentAllocationItem.schedule_start} – {currentAllocationItem.schedule_end}</span>
               </div>
-              <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 font-mono text-[10px]">Canal Turn</span>
+              <span className="px-2 py-0.5 rounded bg-white text-emerald-800 font-mono text-[10px] border border-emerald-200">Canal Turn</span>
             </div>
           </div>
 
@@ -205,21 +196,21 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
       </div>
 
       {/* 6 & 8. Allocation Matrix Table for Logged-In Farmer Only */}
-      <div className="bg-emerald-950/70 backdrop-blur-md p-6 rounded-3xl border border-emerald-800/60 shadow-xl space-y-4">
+      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm space-y-4">
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-emerald-800/60 pb-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-lg font-bold text-white">तुमचे पाणी वाटप विवरण (Your Allocation Details)</h3>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+              <h3 className="text-lg font-bold text-slate-900">तुमचे पाणी वाटप विवरण (Your Allocation Details)</h3>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
                 OR-Tools Verified
               </span>
             </div>
-            <p className="text-xs text-emerald-300/80 mt-0.5">Showing verified allocation for logged-in farmer account.</p>
+            <p className="text-xs text-slate-500 mt-0.5">Showing verified allocation for logged-in farmer account.</p>
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-emerald-200 font-semibold bg-emerald-900/60 px-3 py-1 rounded-xl border border-emerald-700">
+            <span className="text-xs text-emerald-800 font-semibold bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
               Your Fairness Rating: <strong>{currentAllocationItem.fairness_score}/100</strong>
             </span>
           </div>
@@ -227,8 +218,8 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
         {/* Allocations Table - Logged In Farmer Only */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-emerald-100">
-            <thead className="bg-emerald-900/50 text-emerald-300 uppercase font-bold text-[10px] tracking-wider">
+          <table className="w-full text-left text-xs text-slate-800">
+            <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
               <tr>
                 <th className="p-3">शेतकरी (Farmer)</th>
                 <th className="p-3">पीक व टप्पा</th>
@@ -238,20 +229,20 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
                 <th className="p-3 text-right">फेअरनेस स्कोर</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-emerald-800/40">
-              <tr className="bg-emerald-900/60 font-semibold border-l-4 border-cyan-400">
-                <td className="p-3 font-bold text-white flex items-center space-x-2">
+            <tbody className="divide-y divide-slate-100">
+              <tr className="bg-emerald-50/50 font-semibold border-l-4 border-emerald-600">
+                <td className="p-3 font-bold text-slate-900 flex items-center space-x-2">
                   <span>👨‍🌾 {currentAllocationItem.farmer_name}</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/30 text-cyan-200">Active</span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900 font-bold">Active</span>
                 </td>
-                <td className="p-3 text-emerald-200">
-                  {currentAllocationItem.crop_name} <span className="text-[10px] text-emerald-400">({currentAllocationItem.growth_stage})</span>
+                <td className="p-3 text-slate-700">
+                  {currentAllocationItem.crop_name} <span className="text-[10px] text-emerald-700">({currentAllocationItem.growth_stage})</span>
                 </td>
-                <td className="p-3 font-mono">{currentAllocationItem.required_liters.toLocaleString()} L</td>
-                <td className="p-3 font-bold text-cyan-300 font-mono">{currentAllocationItem.allocated_liters.toLocaleString()} L</td>
-                <td className="p-3 text-amber-400 font-mono">{currentAllocationItem.unmet_liters.toLocaleString()} L</td>
+                <td className="p-3 font-mono text-slate-600">{currentAllocationItem.required_liters.toLocaleString()} L</td>
+                <td className="p-3 font-bold text-emerald-700 font-mono">{currentAllocationItem.allocated_liters.toLocaleString()} L</td>
+                <td className="p-3 text-rose-600 font-mono">{currentAllocationItem.unmet_liters.toLocaleString()} L</td>
                 <td className="p-3 text-right">
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-900 text-emerald-200 font-bold border border-emerald-700">
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
                     {currentAllocationItem.fairness_score}/100
                   </span>
                 </td>
@@ -263,62 +254,62 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
       </div>
 
       {/* 9. Irrigation Schedule Timeline for Logged-In Farmer Only */}
-      <div className="bg-emerald-950/70 backdrop-blur-md p-6 rounded-3xl border border-emerald-800/60 shadow-xl space-y-4">
-        <div className="flex items-center justify-between border-b border-emerald-800/60 pb-3">
+      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5 text-cyan-400" />
-            <h3 className="text-lg font-bold text-white">तुमचे सिंचन वेळापत्रक (Your Irrigation Schedule)</h3>
+            <Calendar className="h-5 w-5 text-emerald-600" />
+            <h3 className="text-lg font-bold text-slate-900">तुमचे सिंचन वेळापत्रक (Your Irrigation Schedule)</h3>
           </div>
-          <span className="text-xs font-semibold text-cyan-300 bg-cyan-950 px-3 py-1 rounded-xl border border-cyan-800">
+          <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200">
             📅 Today Slot
           </span>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          <div className="p-5 rounded-2xl border border-cyan-500/60 bg-cyan-950/40 backdrop-blur-md space-y-3 flex flex-col sm:flex-row items-center justify-between">
+          <div className="p-5 rounded-2xl border border-emerald-200 bg-emerald-50/40 space-y-3 flex flex-col sm:flex-row items-center justify-between">
             <div>
               <div className="flex items-center space-x-2 mb-1">
                 <span className="text-lg">💧</span>
-                <span className="font-bold text-lg text-white">{currentAllocationItem.farmer_name}</span>
-                <span className="text-xs font-bold text-cyan-300 bg-cyan-900/60 px-2 py-0.5 rounded-md border border-cyan-700">
+                <span className="font-bold text-lg text-slate-900">{currentAllocationItem.farmer_name}</span>
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
                   {currentAllocationItem.crop_name} ({currentAllocationItem.growth_stage})
                 </span>
               </div>
-              <div className="text-sm text-emerald-200 flex items-center space-x-2 my-2">
-                <Clock className="h-4 w-4 text-cyan-400 shrink-0" />
-                <span className="font-mono font-bold text-white text-base">
+              <div className="text-sm text-slate-600 flex items-center space-x-2 my-2">
+                <Clock className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="font-mono font-bold text-slate-900 text-base">
                   Today {currentAllocationItem.schedule_start} – {currentAllocationItem.schedule_end}
                 </span>
               </div>
             </div>
 
-            <div className="text-right sm:border-l sm:border-emerald-800/60 sm:pl-6 pt-2 sm:pt-0">
-              <span className="text-emerald-400 text-xs font-bold uppercase block">Water Scheduled</span>
-              <span className="font-black text-2xl text-cyan-300 font-mono">{currentAllocationItem.allocated_liters.toLocaleString()} L</span>
+            <div className="text-right sm:border-l sm:border-emerald-200 sm:pl-6 pt-2 sm:pt-0">
+              <span className="text-slate-500 text-xs font-bold uppercase block">Water Scheduled</span>
+              <span className="font-black text-2xl text-emerald-700 font-mono">{currentAllocationItem.allocated_liters.toLocaleString()} L</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* 10. Final Agreement & Audit Trail (Ref UI Screen 10) */}
-      <div className="bg-emerald-900/40 backdrop-blur-md p-5 rounded-3xl border border-emerald-700/50 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+      <div className="bg-white p-5 rounded-3xl border border-emerald-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
-          <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 shrink-0">
-            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+          <div className="p-3 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+            <CheckCircle2 className="h-6 w-6 text-emerald-600" />
           </div>
           <div>
-            <span className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider block">Agreement Status</span>
-            <h4 className="text-base font-extrabold text-white flex items-center space-x-2">
+            <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wider block">Agreement Status</span>
+            <h4 className="text-base font-extrabold text-slate-900 flex items-center space-x-2">
               <span>{isAccepted ? '✓ अंतिम करार पूर्ण (Accepted)' : 'प्रस्तावित वाटप तयार आहे (Pending Final Confirmation)'}</span>
             </h4>
-            <p className="text-xs text-emerald-300/80 mt-0.5">OR-Tools hard constraints verified with transparent AI audit log.</p>
+            <p className="text-xs text-slate-500 mt-0.5">OR-Tools hard constraints verified with transparent AI audit log.</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-3 w-full sm:w-auto">
           <button
             onClick={() => onOpenObjectionModal(currentAllocationItem)}
-            className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition flex items-center justify-center space-x-1.5"
+            className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5"
           >
             <MessageSquarePlus className="h-4 w-4" />
             <span>{t('raiseObjection')}</span>
@@ -327,10 +318,10 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           <button
             onClick={() => onAcceptAllocation(allocation.version)}
             disabled={isAccepted}
-            className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center space-x-1.5 ${
+            className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5 ${
               isAccepted
-                ? 'bg-emerald-800 text-emerald-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-emerald-950'
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
             }`}
           >
             <CheckCircle2 className="h-4 w-4" />
@@ -340,38 +331,38 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
       </div>
 
       {/* Mobile App Navigation Bar (Bottom Navigation for Mobile View) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-emerald-950/95 border-t border-emerald-800/80 backdrop-blur-lg px-4 py-2 flex items-center justify-around text-[10px] text-emerald-300">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg px-4 py-2 flex items-center justify-around text-[10px] text-slate-600">
         <button
           onClick={() => setActiveTab('home')}
-          className={`flex flex-col items-center space-y-1 ${activeTab === 'home' ? 'text-cyan-300 font-bold' : ''}`}
+          className={`flex flex-col items-center space-y-1 ${activeTab === 'home' ? 'text-emerald-700 font-bold' : ''}`}
         >
           <Home className="h-4 w-4" />
           <span>मुख्य (Home)</span>
         </button>
         <button
           onClick={() => setActiveTab('farm')}
-          className={`flex flex-col items-center space-y-1 ${activeTab === 'farm' ? 'text-cyan-300 font-bold' : ''}`}
+          className={`flex flex-col items-center space-y-1 ${activeTab === 'farm' ? 'text-emerald-700 font-bold' : ''}`}
         >
           <Sprout className="h-4 w-4" />
           <span>शेत (Farm)</span>
         </button>
         <button
           onClick={() => setActiveTab('water')}
-          className={`flex flex-col items-center space-y-1 ${activeTab === 'water' ? 'text-cyan-300 font-bold' : ''}`}
+          className={`flex flex-col items-center space-y-1 ${activeTab === 'water' ? 'text-emerald-700 font-bold' : ''}`}
         >
           <Droplets className="h-4 w-4" />
           <span>पाणी (Water)</span>
         </button>
         <button
           onClick={() => onOpenObjectionModal(currentAllocationItem)}
-          className="flex flex-col items-center space-y-1 text-amber-400 font-bold"
+          className="flex flex-col items-center space-y-1 text-amber-600 font-bold"
         >
           <MessageSquare className="h-4 w-4" />
           <span>मध्यस्थी (AI)</span>
         </button>
         <button
           onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center space-y-1 ${activeTab === 'profile' ? 'text-cyan-300 font-bold' : ''}`}
+          className={`flex flex-col items-center space-y-1 ${activeTab === 'profile' ? 'text-emerald-700 font-bold' : ''}`}
         >
           <User className="h-4 w-4" />
           <span>प्रोफाइल</span>
@@ -381,4 +372,5 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
     </div>
   );
 };
+
 
