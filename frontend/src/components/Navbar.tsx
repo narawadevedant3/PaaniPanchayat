@@ -49,10 +49,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
         
         {/* Brand Logo & Name */}
         <div className="flex items-center space-x-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-600 p-0.5 shadow-md shadow-emerald-600/20 flex items-center justify-center">
-            <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center">
-              <Droplets className="h-5 w-5 text-emerald-600" />
-            </div>
+          <div className="h-10 w-10 rounded-xl bg-emerald-600 p-0.5 shadow-md shadow-emerald-600/20 flex items-center justify-center overflow-hidden">
+            <img src="/logo.png" alt="PaaniPanchayat Logo" className="h-full w-full object-cover rounded-[10px]" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
