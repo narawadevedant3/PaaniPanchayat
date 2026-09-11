@@ -181,7 +181,18 @@ export const translations = {
     password: "Password",
     fullName: "Full Name",
     mobileNumber: "Mobile Number (WhatsApp)",
-    createAccount: "Create Account"
+    createAccount: "Create Account",
+
+    // Farmer Profile Popover
+    farmerProfile: "Farmer Profile",
+    accountDetails: "Farmer Account Details",
+    farmerId: "Farmer ID",
+    contactNumber: "Contact Number",
+    region: "Irrigation Region",
+    canalZone: "Canal Zone #1 (Pune)",
+    membership: "Canal Water Shareholder",
+    verifiedFarmer: "Verified Farmer Member",
+    signOut: "Sign Out"
   },
   hi: {
     // Water cycle & System
@@ -315,7 +326,18 @@ export const translations = {
     password: "पासवर्ड",
     fullName: "पूरा नाम",
     mobileNumber: "मोबाइल नंबर (व्हाट्सएप)",
-    createAccount: "खाता बनाएं"
+    createAccount: "खाता बनाएं",
+
+    // Farmer Profile Popover
+    farmerProfile: "किसान प्रोफ़ाइल",
+    accountDetails: "किसान खाता विवरण",
+    farmerId: "किसान आईडी",
+    contactNumber: "संपर्क नंबर",
+    region: "सिंचाई क्षेत्र",
+    canalZone: "नहर ज़ोन #1 (पुणे)",
+    membership: "नहर जल उपभोक्ता सदस्य",
+    verifiedFarmer: "सत्यापित किसान सदस्य",
+    signOut: "साइन आउट / लॉग आउट"
   },
   mr: {
     // Water cycle & System
@@ -449,6 +471,17 @@ export const translations = {
     password: "पासवर्ड",
     fullName: "पूर्ण नाव",
     mobileNumber: "मोबाईल नंबर (व्हॉट्सॲप)",
-    createAccount: "खाते तयार करा"
+    createAccount: "खाते तयार करा",
+
+    // Farmer Profile Popover
+    farmerProfile: "शेतकरी प्रोफाइल",
+    accountDetails: "शेतकरी खाते तपशील",
+    farmerId: "शेतकरी आयडी",
+    contactNumber: "संपर्क क्रमांक",
+    region: "सिंचन विभाग",
+    canalZone: "कालवा विभाग क्र. १ (पुणे)",
+    membership: "कालवा पाणी वापरकर्ता सदस्य",
+    verifiedFarmer: "सत्यापित शेतकरी सदस्य",
+    signOut: "लॉग आउट करा"
   }
 };

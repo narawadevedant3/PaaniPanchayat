@@ -31,6 +31,7 @@ class AuthResponse(BaseModel):
     email: str
     role: str
     token: str
+    contact: Optional[str] = None
     message: str
 
 class UserResponse(UserBase):

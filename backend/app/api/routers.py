@@ -145,6 +145,7 @@ def register_user(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
         email=new_user.email,
         role=new_user.role,
         token=token,
+        contact=new_user.contact,
         message="User registered successfully"
     )
 
@@ -175,6 +176,7 @@ def login_user(login_in: schemas.UserLogin, db: Session = Depends(get_db)):
         email=user.email or email_clean,
         role=user.role,
         token=token,
+        contact=user.contact,
         message="Login successful"
     )
 

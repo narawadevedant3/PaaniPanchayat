@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string;
   role: UserRole;
   token: string;
+  contact?: string;
 }
 
 export interface LoginCredentials {

@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { AuthUser, UserRole, Language } from '../types';
-import { Droplets, RefreshCw, Download, Globe, User, Scale, LogOut } from 'lucide-react';
+import { Download, Globe, User, LogOut, ChevronDown, Mail, Phone, BadgeCheck, Shield } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -19,10 +19,12 @@ interface NavbarProps {
   onLogout?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDemo, isLoading, authUser, onLogout }) => {
+export const Navbar: React.FC<NavbarProps> = ({ authUser, onLogout }) => {
   const { language, setLanguage, t } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
@@ -33,6 +35,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleInstallApp = async () => {
@@ -75,38 +88,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
         {/* Action Controls */}
         <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
 
-          {/* Demo Scenario Reset Button */}
-          <button
-            onClick={onResetDemo}
-            disabled={isLoading}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold shadow-sm transition disabled:opacity-50"
-            title="Reset to 4-Farm Demo Scenario (180,000 L)"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-amber-600 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline">{t('demoReset')}</span>
-          </button>
-
-          {/* Active Role Switcher Toggle */}
-          <button
-            onClick={() => setRole(currentRole === 'farmer' ? 'admin' : 'farmer')}
-            className="flex items-center px-2 sm:px-3 py-1 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 text-xs font-semibold transition cursor-pointer"
-            title="Click to toggle Farmer / Admin view"
-          >
-            {currentRole === 'admin' ? (
-              <span className="flex items-center space-x-1 text-amber-700">
-                <Scale className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                <span className="hidden sm:inline">{t('adminView')}</span>
-                <span className="sm:hidden text-[11px]">{t('admin')}</span>
-              </span>
-            ) : (
-              <span className="flex items-center space-x-1 text-emerald-800">
-                <User className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                <span className="hidden sm:inline">{t('farmerView')}</span>
-                <span className="sm:hidden text-[11px]">{t('farmer')}</span>
-              </span>
-            )}
-          </button>
-
           {/* Language Switcher */}
           <div className="relative flex items-center bg-slate-100 px-1.5 sm:px-2 py-1 rounded-lg border border-slate-200 text-xs">
             <Globe className="h-3.5 w-3.5 text-slate-600 mr-1 shrink-0" />
@@ -124,29 +105,129 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
           {/* PWA Install App Button */}
           <button
             onClick={handleInstallApp}
-            className={`flex items-center space-x-1 px-2 py-1.5 sm:px-2.5 rounded-lg text-xs font-medium shadow-sm transition shrink-0 ${isInstallable ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white'
-              }`}
+            className={`flex items-center space-x-1 px-2 py-1.5 sm:px-2.5 rounded-lg text-xs font-medium shadow-sm transition shrink-0 ${
+              isInstallable ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white'
+            }`}
             title="Install PWA to Home Screen"
           >
             <Download className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden lg:inline">{t('installApp')}</span>
           </button>
 
-          {/* User Profile & Logout */}
+          {/* User Profile & Dropdown with Basic Info & Bottom Logout */}
           {authUser && (
-            <div className="flex items-center space-x-1.5 pl-1.5 sm:pl-2 border-l border-slate-200 shrink-0">
-              <div className="hidden md:flex flex-col text-right">
-                <span className="text-xs font-bold text-slate-900 truncate max-w-[100px]">{authUser.name}</span>
-                <span className="text-[10px] text-emerald-700 font-semibold capitalize">{authUser.role}</span>
-              </div>
-              {onLogout && (
-                <button
-                  onClick={onLogout}
-                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition shrink-0"
-                  title="Sign Out"
-                >
-                  <LogOut className="h-3.5 w-3.5 shrink-0" />
-                </button>
+            <div className="relative pl-1.5 sm:pl-2 border-l border-slate-200 shrink-0" ref={profileRef}>
+              {/* Profile Trigger Button */}
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center space-x-2 p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 transition text-left cursor-pointer"
+                title={t('farmerProfile')}
+                aria-expanded={isProfileOpen}
+              >
+                {/* Farmer Avatar with Online Indicator */}
+                <div className="relative flex items-center justify-center h-8 w-8 rounded-full bg-emerald-600 text-white font-black text-xs shadow-sm shrink-0">
+                  {authUser.name ? authUser.name.charAt(0).toUpperCase() : 'F'}
+                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-400 ring-1 ring-white" />
+                </div>
+
+                <div className="hidden md:flex flex-col min-w-0 pr-1">
+                  <span className="text-xs font-bold text-slate-900 truncate max-w-[120px]">
+                    {authUser.name}
+                  </span>
+                  <span className="text-[10px] font-semibold text-emerald-700 capitalize flex items-center gap-1">
+                    {authUser.role === 'farmer' ? t('farmer') : t('admin')}
+                  </span>
+                </div>
+
+                <ChevronDown className={`h-3.5 w-3.5 text-emerald-700 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Farmer Profile Popover Card */}
+              {isProfileOpen && (
+                <div className="absolute right-0 top-12 mt-1 w-80 sm:w-88 bg-white/95 backdrop-blur-md rounded-2xl border border-emerald-100 shadow-2xl p-4 z-50 text-slate-800 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+                  
+                  {/* Profile Header: Avatar, Full Name & Verified Farmer Badge */}
+                  <div className="flex items-center space-x-3 pb-3 border-b border-slate-100">
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center font-black text-lg shadow-md shrink-0">
+                      {authUser.name ? authUser.name.charAt(0).toUpperCase() : 'F'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="text-sm font-extrabold text-slate-900 truncate">{authUser.name}</h4>
+                        <BadgeCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                      </div>
+                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                        {authUser.role === 'farmer' ? `🌱 ${t('verifiedFarmer')}` : `⚖️ ${t('admin')}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Basic Information Section */}
+                  <div className="space-y-2.5 text-xs">
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">
+                      {t('accountDetails')}
+                    </span>
+
+                    {/* Email Address */}
+                    <div className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] text-slate-400 font-bold block">{t('emailAddress')}</span>
+                        <span className="text-xs font-semibold text-slate-800 truncate block">{authUser.email}</span>
+                      </div>
+                    </div>
+
+                    {/* Contact Phone */}
+                    <div className="flex items-center space-x-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                      <Phone className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] text-slate-400 font-bold block">{t('contactNumber')}</span>
+                        <span className="text-xs font-semibold text-slate-800 truncate block">
+                          {authUser.contact || '+91 9730076082'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Farmer ID & Irrigation Region */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-[10px] text-slate-400 font-bold block">{t('farmerId')}</span>
+                        <span className="text-xs font-mono font-bold text-emerald-800 block">
+                          #PP-{authUser.user_id ? String(authUser.user_id).padStart(4, '0') : '0108'}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                        <span className="text-[10px] text-slate-400 font-bold block">{t('region')}</span>
+                        <span className="text-xs font-bold text-slate-800 truncate block">
+                          {t('canalZone')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Canal Water Shareholder Tag */}
+                    <div className="p-2 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center space-x-2 text-[11px] text-emerald-800 font-medium">
+                      <Shield className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <span>{t('membership')}</span>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Logout Option */}
+                  {onLogout && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onLogout();
+                        }}
+                        className="w-full py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center space-x-2 border border-rose-200 transition shadow-sm cursor-pointer"
+                      >
+                        <LogOut className="h-4 w-4 text-rose-600 shrink-0" />
+                        <span>{t('signOut')}</span>
+                      </button>
+                    </div>
+                  )}
+
+                </div>
               )}
             </div>
           )}
