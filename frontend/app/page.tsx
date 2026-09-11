@@ -234,15 +234,22 @@ export default function Home() {
         const proposal: MediationProposalResponse = await res.json();
         setAllocation(proposal.revised_allocation);
         return proposal;
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Water request limit reached.");
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      if (e.message && e.message.includes("Panchayat Policy Limit")) {
+        throw e;
+      }
+      console.log("API offline, running local fallback mediation proposal", e);
     }
 
     // Local fallback mediation proposal calculation if API is offline
     if (allocation) {
-      const targetItem = allocation.allocations.find(a => a.farm_id === farmId) || allocation.allocations[1];
-      const newAllocations = allocation.allocations.map(a => {
+      const currentAlloc = allocation;
+      const targetItem = currentAlloc.allocations.find(a => a.farm_id === farmId) || currentAlloc.allocations[1];
+      const newAllocations = currentAlloc.allocations.map(a => {
         if (a.farm_id === farmId) {
           return {
             ...a,
@@ -262,8 +269,8 @@ export default function Home() {
       });
 
       const revised: AllocationResult = {
-        ...allocation,
-        version: allocation.version + 1,
+        ...currentAlloc,
+        version: currentAlloc.version + 1,
         allocations: newAllocations
       };
 
@@ -354,9 +361,13 @@ export default function Home() {
         if (newFarm && newFarm.id) {
           setSelectedFarmId(newFarm.id);
         }
+      } else {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Failed to submit water request. 1 request allowed per farmer every 3 days.");
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Water request error:", e);
+      throw e;
     }
   };
 

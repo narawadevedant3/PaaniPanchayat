@@ -299,6 +299,30 @@ def create_farm(farm_in: schemas.FarmCreate, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
 
+    # Enforce 1 water request every 3 days rule per farmer
+    now = datetime.datetime.utcnow()
+    three_days_ago = now - datetime.timedelta(days=3)
+
+    if user and user.id:
+        user_farms = db.query(models.Farm).filter(models.Farm.user_id == user.id).all()
+        target_farm_ids = [f.id for f in user_farms]
+        if target_farm_ids:
+            recent_req = (
+                db.query(models.WaterRequirement)
+                .filter(models.WaterRequirement.farm_id.in_(target_farm_ids))
+                .filter(models.WaterRequirement.created_at >= three_days_ago)
+                .order_by(models.WaterRequirement.created_at.desc())
+                .first()
+            )
+            if recent_req:
+                next_eligible = recent_req.created_at + datetime.timedelta(days=3)
+                diff = next_eligible - now
+                hours_rem = round(max(diff.total_seconds() / 3600.0, 0.1), 1)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Panchayat Policy Limit: 1 water request per farmer every 3 days. Last request was submitted on {recent_req.created_at.strftime('%b %d, %H:%M')}. Next eligible request in {hours_rem} hours."
+                )
+
     farm = models.Farm(
         user_id=user.id,
         farmer_name=farm_in.farmer_name,
@@ -472,8 +496,82 @@ def update_water_source(update_in: schemas.WaterSourceUpdate, db: Session = Depe
     return allocation
 
 # --- MEDIATION & DISPUTE ENDPOINTS ---
+@router.get("/water-request/cooldown")
+def check_water_request_cooldown(farm_id: Optional[int] = None, user_id: Optional[int] = None, db: Session = Depends(get_db)):
+    """
+    Checks if a farmer/farm is eligible to raise a water request under the '1 request per 3 days' Panchayat policy.
+    """
+    now = datetime.datetime.utcnow()
+    three_days_ago = now - datetime.timedelta(days=3)
+
+    target_farm_ids = []
+    if farm_id:
+        target_farm_ids.append(farm_id)
+        farm = db.query(models.Farm).filter(models.Farm.id == farm_id).first()
+        if farm and farm.user_id:
+            user_farms = db.query(models.Farm).filter(models.Farm.user_id == farm.user_id).all()
+            target_farm_ids = list(set([f.id for f in user_farms]))
+    elif user_id:
+        user_farms = db.query(models.Farm).filter(models.Farm.user_id == user_id).all()
+        target_farm_ids = [f.id for f in user_farms]
+
+    if not target_farm_ids:
+        return {"can_request": True, "message": "Eligible for water request"}
+
+    recent_dispute = (
+        db.query(models.Dispute)
+        .filter(models.Dispute.farm_id.in_(target_farm_ids))
+        .filter(models.Dispute.created_at >= three_days_ago)
+        .order_by(models.Dispute.created_at.desc())
+        .first()
+    )
+
+    if recent_dispute:
+        next_eligible = recent_dispute.created_at + datetime.timedelta(days=3)
+        diff = next_eligible - now
+        hours_remaining = round(max(diff.total_seconds() / 3600.0, 0.1), 1)
+        days_remaining = round(max(diff.total_seconds() / 86400.0, 0.1), 1)
+        
+        return {
+            "can_request": False,
+            "last_request_at": recent_dispute.created_at.isoformat(),
+            "next_eligible_at": next_eligible.isoformat(),
+            "hours_remaining": hours_remaining,
+            "days_remaining": days_remaining,
+            "message": f"Panchayat Policy Limit: 1 water request per farmer every 3 days. You last requested water on {recent_dispute.created_at.strftime('%b %d, %H:%M')}. Next request eligible in {hours_remaining} hours ({days_remaining} days)."
+        }
+
+    return {"can_request": True, "message": "Eligible for water request"}
+
 @router.post("/mediation/propose", response_model=schemas.MediationProposalResponse)
 def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends(get_db)):
+    now = datetime.datetime.utcnow()
+    three_days_ago = now - datetime.timedelta(days=3)
+
+    target_farm = db.query(models.Farm).filter(models.Farm.id == objection.farm_id).first()
+    target_farm_ids = [objection.farm_id]
+    if target_farm and target_farm.user_id:
+        user_farms = db.query(models.Farm).filter(models.Farm.user_id == target_farm.user_id).all()
+        target_farm_ids = list(set([f.id for f in user_farms]))
+
+    # Enforce 1 request every 3 days per farmer
+    recent_dispute = (
+        db.query(models.Dispute)
+        .filter(models.Dispute.farm_id.in_(target_farm_ids))
+        .filter(models.Dispute.created_at >= three_days_ago)
+        .order_by(models.Dispute.created_at.desc())
+        .first()
+    )
+
+    if recent_dispute:
+        next_eligible = recent_dispute.created_at + datetime.timedelta(days=3)
+        diff = next_eligible - now
+        hours_rem = round(max(diff.total_seconds() / 3600.0, 0.1), 1)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Panchayat Policy Limit: 1 water request allowed per farmer every 3 days. Last request was on {recent_dispute.created_at.strftime('%b %d, %H:%M')}. Next request eligible in {hours_rem} hours."
+        )
+
     current_alloc = CURRENT_STATE["last_allocation"]
     if not current_alloc:
         # Fallback reset if needed
@@ -489,11 +587,23 @@ def propose_mediation(objection: schemas.ObjectionRequest, db: Session = Depends
         requested_additional_liters=objection.requested_additional_liters
     )
 
+    # Save dispute record in DB to enforce 3-day policy for future requests
+    new_dispute = models.Dispute(
+        farm_id=objection.farm_id,
+        objection_text=objection.objection_reason,
+        requested_additional_liters=objection.requested_additional_liters,
+        status="Mediated",
+        created_at=now
+    )
+    db.add(new_dispute)
+    db.commit()
+
     CURRENT_STATE["last_allocation"] = proposal.revised_allocation
     log_audit(db, "Dispute", str(objection.farm_id), "AI_MEDIATION_PROPOSAL", {
         "farmer": objection.farmer_name,
         "objection": objection.objection_reason,
-        "validated": proposal.is_validated_by_optimizer
+        "validated": proposal.is_validated_by_optimizer,
+        "dispute_id": new_dispute.id
     })
     return proposal
 

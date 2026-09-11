@@ -34,6 +34,18 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'home' | 'farm' | 'water' | 'mediation' | 'profile'>('home');
+  const [cooldown, setCooldown] = useState<{ can_request: boolean; message?: string; hours_remaining?: number; days_remaining?: number } | null>(null);
+
+  const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:8000/api` : "http://127.0.0.1:8000/api";
+
+  React.useEffect(() => {
+    if (selectedFarmId) {
+      fetch(`${API_BASE}/water-request/cooldown?farm_id=${selectedFarmId}${authUser?.user_id ? `&user_id=${authUser.user_id}` : ''}`)
+        .then(res => res.json())
+        .then(data => setCooldown(data))
+        .catch(err => console.log(err));
+    }
+  }, [selectedFarmId, authUser]);
 
   if (!allocation || !allocation.allocations || allocation.allocations.length === 0) {
     return (
@@ -82,7 +94,8 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   // Filter allocations to strictly show ONLY lands belonging to this logged-in farmer profile
   const myAllocations = allocation.allocations.filter(a => matchFarmerAllocation(a, authUser));
 
-  const displayedAllocations = myAllocations;
+  // Show ONLY the latest active request for the farmer profile, hiding older requests from view (while keeping in DB)
+  const displayedAllocations = myAllocations.length > 0 ? [myAllocations[myAllocations.length - 1]] : [];
 
   // Active farm selected dynamically in Farmer view
   const currentAllocationItem = displayedAllocations.find(a => a.farm_id === selectedFarmId) || displayedAllocations[0];
@@ -102,22 +115,22 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
                 Farmer Profile Active
               </span>
             </div>
-            <p className="text-xs text-emerald-100 mt-1">No registered land parcels found for profile: {authUser?.email}</p>
+            <p className="text-xs text-emerald-100 mt-1">No active water request found for profile: {authUser?.email}</p>
           </div>
           <button
             onClick={onOpenAddFarmModal}
             className="px-5 py-2.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-md flex items-center space-x-1.5"
           >
-            <Sprout className="h-4 w-4 text-emerald-700" />
-            <span>+ Register Your Land</span>
+            <Droplets className="h-4 w-4 text-emerald-700" />
+            <span>💧 Create Water Request</span>
           </button>
         </div>
 
         <div className="bg-white p-8 rounded-3xl border border-emerald-100 text-center shadow-sm space-y-3">
           <Droplets className="h-12 w-12 text-emerald-600 mx-auto animate-pulse" />
-          <h3 className="text-lg font-bold text-slate-900">No Farm Parcels Registered in Profile</h3>
+          <h3 className="text-lg font-bold text-slate-900">No Active Water Request</h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            You are logged in as <strong>{authUser?.name}</strong>. Click <strong>"+ Register Your Land"</strong> above to register your acreage, crop stage, and soil conditions to calculate your OR-Tools water allocation.
+            You are logged in as <strong>{authUser?.name}</strong>. Click <strong>"💧 Create Water Request"</strong> above to submit your crop stage and land details for OR-Tools canal allocation.
           </p>
         </div>
       </div>
@@ -152,7 +165,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
               </span>
             </div>
             <p className="text-xs text-emerald-100 mt-0.5">
-              Viewing parcel: <strong>{currentAllocationItem.farmer_name}</strong> — {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Farm details and water allocations are active below.'}
+              Active Request: <strong>{currentAllocationItem.farmer_name}</strong> — {language === 'mr' ? 'शेताची माहिती व पाणी गरज खालीलप्रमाणे आहे.' : language === 'hi' ? 'खेत की जानकारी और पानी की आवश्यकता नीचे है।' : 'Active water request and allocations below.'}
             </p>
           </div>
         </div>
@@ -162,7 +175,8 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
             onClick={onOpenAddFarmModal}
             className="px-4 py-2 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition shadow-sm flex items-center space-x-1.5"
           >
-            <span>+ Add Farm</span>
+            <Droplets className="h-4 w-4 text-emerald-700" />
+            <span>💧 Create Water Request</span>
           </button>
         </div>
       </div>
@@ -383,7 +397,14 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+          {cooldown && !cooldown.can_request && (
+            <div className="text-[11px] font-bold text-amber-800 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center space-x-1.5">
+              <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <span>3-Day Policy Cooldown ({cooldown.hours_remaining}h left)</span>
+            </div>
+          )}
+
           <button
             onClick={() => onOpenObjectionModal(currentAllocationItem)}
             className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition flex items-center justify-center space-x-1.5"
