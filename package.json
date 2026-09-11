@@ -1,0 +1,24 @@
+{
+  "name": "paanipanchayat",
+  "version": "1.0.0",
+  "description": "PaaniPanchayat — Fair Water. Peaceful Farming. AI-driven water sharing and dispute mediation platform.",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "npm --prefix src/frontend run dev",
+    "dev:backend": "uvicorn app.main:app --app-dir src/backend --reload --port 8000",
+    "build:frontend": "npm --prefix src/frontend run build",
+    "install:frontend": "npm --prefix src/frontend install",
+    "install:backend": "pip install -r requirements.txt"
+  },
+  "keywords": [
+    "water-sharing",
+    "or-tools",
+    "agriculture",
+    "canal-irrigation",
+    "ai-mediation",
+    "fastapi",
+    "nextjs"
+  ],
+  "author": "PaaniPanchayat Team",
+  "license": "MIT"
+}

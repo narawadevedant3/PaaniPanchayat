@@ -1,0 +1,80 @@
+# ==============================================================================
+# PaaniPanchayat — Secure Root .gitignore
+# ==============================================================================
+
+# --- Secure Credentials, Secrets & Environment Files ---
+.env
+.env.*
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+secrets/
+credentials.json
+service_account.json
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+token.json
+
+# --- Databases & Persistent SQLite Stores ---
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-shm
+*.db-wal
+paanipanchayat.db
+src/backend/paanipanchayat.db
+
+# --- Python Virtual Environments & Bytecode ---
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# --- Node.js & Next.js Builds ---
+node_modules/
+src/frontend/node_modules/
+.next/
+src/frontend/.next/
+out/
+src/frontend/out/
+.turbo/
+*.tsbuildinfo
+src/frontend/tsconfig.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Root Junction Symlinks (for Windows backward-compatibility) ---
+/backend
+/frontend
+
+# --- IDEs, Editors & OS Files ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.freebuff/

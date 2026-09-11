@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    actor Farmer as Farmer Member
+    participant NextJS as Next.js Frontend (PWA)
+    participant FastAPI as FastAPI Backend
+    participant Engine as Water Requirement Engine
+    participant ORTools as Google OR-Tools Solver
+    participant Mediator as LangGraph AI Mediator
+    participant DB as SQLite / SQLAlchemy
+
+    Farmer->>NextJS: Submit Crop Stage & Land Details
+    NextJS->>FastAPI: POST /api/water-request
+    FastAPI->>Engine: Calculate crop water demand (Kc, soil, weather)
+    Engine-->>FastAPI: Calculated Demand (Liters)
+    FastAPI->>ORTools: Solve linear optimization model
+    Note over ORTools: Hard constraints: Sum(Allocations) <= Canal Capacity
+    ORTools-->>FastAPI: Optimal Fair Allocation Matrix & Time Slots
+    FastAPI->>DB: Store Allocation & Immutable Audit Log
+    FastAPI-->>NextJS: Display Allocation & Fairness Score (0-100)
+    
+    alt Farmer Accepts
+        Farmer->>NextJS: Accept Allocation
+        NextJS->>FastAPI: POST /api/allocation/accept
+        FastAPI->>DB: Update status to 'Accepted'
+    else Farmer Raises Objection
+        Farmer->>NextJS: File Objection (Crop in critical stage)
+        NextJS->>FastAPI: POST /api/mediation/objection
+        FastAPI->>Mediator: Run Multi-Agent Mediation Evaluation
+        Mediator->>ORTools: Re-verify feasibility of compromise
+        ORTools-->>Mediator: Validated Reallocation
+        Mediator-->>FastAPI: Proposed Settlement Proposal
+        FastAPI-->>NextJS: Display AI Mediation Proposal & Rationale
+        Farmer->>NextJS: Accept Compromise Proposal
+        NextJS->>FastAPI: POST /api/mediation/accept-proposal
+        FastAPI->>DB: Commit Locked Agreement to Audit Trail
+    end

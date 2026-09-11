@@ -1,0 +1,54 @@
+{
+  "water_source": {
+    "name": "Panchayat Shared Canal #1",
+    "total_capacity_liters": 500000,
+    "available_volume_liters": 180000,
+    "current_cycle": 1
+  },
+  "farms": [
+    {
+      "id": 1,
+      "farmer_name": "Ramesh (Farm A)",
+      "crop_name": "Wheat",
+      "growth_stage": "Flowering",
+      "area_acres": 2.5,
+      "soil_type": "Loamy",
+      "irrigation_efficiency": 0.90,
+      "is_critical_stage": true,
+      "emergency_priority": false
+    },
+    {
+      "id": 2,
+      "farmer_name": "Suresh (Farm B)",
+      "crop_name": "Tomato",
+      "growth_stage": "Fruit Development",
+      "area_acres": 1.8,
+      "soil_type": "Black",
+      "irrigation_efficiency": 0.75,
+      "is_critical_stage": true,
+      "emergency_priority": false
+    },
+    {
+      "id": 3,
+      "farmer_name": "Vikram (Farm C)",
+      "crop_name": "Sugarcane",
+      "growth_stage": "Vegetative",
+      "area_acres": 4.0,
+      "soil_type": "Clay",
+      "irrigation_efficiency": 0.60,
+      "is_critical_stage": false,
+      "emergency_priority": false
+    },
+    {
+      "id": 4,
+      "farmer_name": "Anita (Farm D)",
+      "crop_name": "Gram",
+      "growth_stage": "Flowering",
+      "area_acres": 1.2,
+      "soil_type": "Loamy",
+      "irrigation_efficiency": 0.90,
+      "is_critical_stage": true,
+      "emergency_priority": false
+    }
+  ]
+}
