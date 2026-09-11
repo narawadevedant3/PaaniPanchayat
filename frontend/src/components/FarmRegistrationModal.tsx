@@ -1,0 +1,159 @@
+"use client";
+
+import React, { useState } from 'react';
+import { Sprout, Plus, CheckCircle } from 'lucide-react';
+
+interface FarmRegistrationModalProps {
+  onClose: () => void;
+  onAddFarm: (farmData: any) => Promise<void>;
+}
+
+export const FarmRegistrationModal: React.FC<FarmRegistrationModalProps> = ({ onClose, onAddFarm }) => {
+  const [formData, setFormData] = useState({
+    farmer_name: '',
+    crop_name: 'Wheat',
+    area_acres: 2.0,
+    growth_stage: 'Flowering',
+    soil_type: 'Clay',
+    irrigation_efficiency: 0.75,
+    previous_irrigation_liters: 5000.0,
+    is_critical_stage: false
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.farmer_name.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onAddFarm(formData);
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-emerald-950 border border-emerald-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-emerald-800 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-300">
+              <Sprout className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Register New Farm</h3>
+              <p className="text-xs text-emerald-300">Farmer Onboarding Wizard</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-emerald-400 hover:text-white font-bold text-sm">
+            ✕
+          </button>
+        </div>
+
+        {/* Form Inputs */}
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          
+          <div>
+            <label className="text-emerald-300 font-bold block mb-1">Farmer Name:</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Dnyaneshwar Patil"
+              value={formData.farmer_name}
+              onChange={(e) => setFormData({ ...formData, farmer_name: e.target.value })}
+              className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-emerald-300 font-bold block mb-1">Crop Type:</label>
+              <select
+                value={formData.crop_name}
+                onChange={(e) => setFormData({ ...formData, crop_name: e.target.value })}
+                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+              >
+                <option value="Wheat">Wheat</option>
+                <option value="Tomato">Tomato</option>
+                <option value="Sugarcane">Sugarcane</option>
+                <option value="Onion">Onion</option>
+                <option value="Cotton">Cotton</option>
+                <option value="Rice">Rice</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-emerald-300 font-bold block mb-1">Farm Area (Acres):</label>
+              <input
+                type="number"
+                step="0.5"
+                min="0.5"
+                max="50"
+                value={formData.area_acres}
+                onChange={(e) => setFormData({ ...formData, area_acres: parseFloat(e.target.value) || 1.0 })}
+                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-emerald-300 font-bold block mb-1">Growth Stage:</label>
+              <select
+                value={formData.growth_stage}
+                onChange={(e) => setFormData({ ...formData, growth_stage: e.target.value })}
+                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+              >
+                <option value="Flowering">Flowering</option>
+                <option value="Fruit Development">Fruit Development</option>
+                <option value="Bulb Development">Bulb Development</option>
+                <option value="Vegetative">Vegetative</option>
+                <option value="Initial / Germination">Initial / Germination</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-emerald-300 font-bold block mb-1">Soil Type:</label>
+              <select
+                value={formData.soil_type}
+                onChange={(e) => setFormData({ ...formData, soil_type: e.target.value })}
+                className="w-full bg-emerald-900/60 border border-emerald-700 rounded-xl p-3 text-white focus:outline-none"
+              >
+                <option value="Clay">Clay</option>
+                <option value="Loam">Loam</option>
+                <option value="Black">Black (Regur)</option>
+                <option value="Sandy">Sandy</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-emerald-800 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-emerald-300 font-semibold transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-400 text-emerald-950 font-bold transition flex items-center space-x-1.5"
+            >
+              <Plus className="h-4 w-4" />
+              <span>{isSubmitting ? "Saving..." : "Add Farm & Calculate Need"}</span>
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  );
+};
