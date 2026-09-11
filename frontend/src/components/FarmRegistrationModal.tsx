@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Droplets, Plus, ShieldAlert, Clock, Sprout } from 'lucide-react';
+import { Droplets, ShieldAlert, Clock } from 'lucide-react';
 import { FarmFormData } from '../types';
 
 interface FarmRegistrationModalProps {

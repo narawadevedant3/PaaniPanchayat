@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { AllocationResult, Farm, AllocationItem, AuthUser } from '../types';
-import { Droplets, Calendar, Clock, AlertTriangle, Scale, CheckCircle2, HelpCircle, MessageSquarePlus, ChevronRight, Sprout, Sun, CloudRain, ShieldCheck, Home, User, BarChart2, MessageSquare, Check, ArrowRight } from 'lucide-react';
+import { Droplets, Calendar, Clock, CheckCircle2, HelpCircle, MessageSquarePlus, ChevronRight, Sprout, Sun, Home, User, MessageSquare } from 'lucide-react';
 
 interface FarmerDashboardProps {
   allocation: AllocationResult | null;
@@ -21,6 +21,7 @@ interface FarmerDashboardProps {
 
 export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   allocation,
+  farms = [],
   selectedFarmId,
   setSelectedFarmId,
   onOpenWhyModal,
@@ -98,7 +99,6 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
 
   // Active farm selected dynamically in Farmer view
   const currentAllocationItem = displayedAllocations.find(a => a.farm_id === selectedFarmId) || displayedAllocations[0];
-  const activeFarm = currentAllocationItem ? farms.find(f => f.id === currentAllocationItem.farm_id) : undefined;
 
   const farmerGreetingName = authUser?.name || (currentAllocationItem ? currentAllocationItem.farmer_name : 'Farmer');
 

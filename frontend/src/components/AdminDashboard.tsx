@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { AllocationResult, AuditLogItem } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
-import { Scale, ShieldCheck, FileText, Activity, Droplets, Users, Clock, History, AlertCircle, Edit3, Check, X, Waves, RotateCcw } from 'lucide-react';
+import { Scale, ShieldCheck, FileText, Activity, Droplets, Users, History, AlertCircle, Edit3, Check, X, Waves, RotateCcw } from 'lucide-react';
 
 interface AdminDashboardProps {
   allocation: AllocationResult | null;
@@ -65,7 +65,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
     if (input === null) return;
     const volume = parseFloat(input.replace(/[^0-9.]/g, ''));
-    onReleaseWater(isNaN(volume) ? undefined : volume);
+    if (onReleaseWater) {
+      onReleaseWater(isNaN(volume) ? undefined : volume);
+    }
   };
 
   if (!allocation) {
@@ -387,13 +389,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {disputeLogs.map((dispute) => {
               const disputeFarmId = Number(dispute.entity_id);
               const isThisDisputeAccepted = isAccepted || (acceptedFarmIds && acceptedFarmIds.includes(disputeFarmId));
+              const detailsObj = (typeof dispute.details === 'object' && dispute.details !== null)
+                ? (dispute.details as Record<string, unknown>)
+                : null;
+              const farmerDisplayName = detailsObj?.farmer ? String(detailsObj.farmer) : `Farm #${dispute.entity_id}`;
+              const objectionText = detailsObj?.objection ? String(detailsObj.objection) : null;
 
               return (
                 <div key={dispute.id} className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200 text-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="font-bold text-slate-900 text-sm">
-                        👨‍🌾 {typeof dispute.details === 'object' && dispute.details?.farmer ? dispute.details.farmer : `Farm #${dispute.entity_id}`}
+                        👨‍🌾 {farmerDisplayName}
                       </span>
                       <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px] uppercase border border-amber-200">
                         Farm #{dispute.entity_id} Objection
@@ -404,9 +411,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </span>
                   </div>
 
-                  {typeof dispute.details === 'object' && dispute.details?.objection && (
+                  {objectionText && (
                     <p className="text-slate-700 bg-white p-2.5 rounded-xl border border-amber-100 italic">
-                      "{dispute.details.objection}"
+                      &quot;{objectionText}&quot;
                     </p>
                   )}
 
