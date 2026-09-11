@@ -55,7 +55,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
       const res = await fetch(`${apiBase}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword.trim() })
+        body: JSON.stringify({ email: loginEmail.trim().toLowerCase(), password: loginPassword.trim() })
       });
 
       const data = await res.json();
