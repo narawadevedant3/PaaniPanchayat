@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Droplet, Lock, Mail, User, Phone, ArrowRight, Sparkles, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Droplet, Lock, Mail, User, Phone, ArrowRight, Sparkles, CheckCircle2, Eye, EyeOff, Waves, Sprout, Scale, ShieldCheck } from 'lucide-react';
 import { AuthUser, UserRole } from '../types';
+import { ThreeDWaterBackground } from './ThreeDWaterBackground';
 
 interface AuthViewProps {
   onLoginSuccess: (user: AuthUser) => void;
@@ -11,6 +12,20 @@ interface AuthViewProps {
 
 export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) => {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+
+  // Interactive 3D card tilt state
+  const [cardTilt, setCardTilt] = useState({ x: 0, y: 0 });
+
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setCardTilt({ x: -(y * 7), y: x * 7 });
+  };
+
+  const handleCardMouseLeave = () => {
+    setCardTilt({ x: 0, y: 0 });
+  };
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -143,13 +158,78 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f2f6f4] p-4 sm:p-6 lg:p-8 font-sans relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#f0f7f4] p-4 sm:p-6 lg:p-8 font-sans relative overflow-hidden">
+      {/* 3D Interactive Water Canvas Background */}
+      <ThreeDWaterBackground />
 
-      {/* Background visual graphics */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-100/50 rounded-full blur-3xl pointer-events-none" />
+      {/* Floating 3D Ambient Depth Cards (Desktop) */}
+      <div
+        className="hidden xl:flex flex-col gap-5 absolute left-12 top-1/2 -translate-y-1/2 max-w-xs z-10 pointer-events-none transition-transform duration-700 ease-out"
+        style={{ transform: `translateY(-50%) translate3d(${cardTilt.y * -1.5}px, ${cardTilt.x * -1.5}px, 0)` }}
+      >
+        <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
+          <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
+            <Waves className="w-4 h-4 text-emerald-600 animate-pulse" />
+            <span>3D Canal Flow Simulation</span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            Real-time OR-Tools linear solver ensures fair canal distribution across all farm plots.
+          </p>
+          <div className="flex items-center space-x-2 pt-1 text-[10px] font-bold text-emerald-700">
+            <span className="bg-emerald-100/80 px-2 py-0.5 rounded-full">Flow: 450 L/min</span>
+            <span className="bg-blue-100/80 text-blue-800 px-2 py-0.5 rounded-full">Floor: 60%</span>
+          </div>
+        </div>
 
-      <div className="w-full max-w-md bg-white border border-emerald-100 shadow-xl rounded-3xl p-6 sm:p-8 relative z-10 text-slate-800">
+        <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
+          <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
+            <Sprout className="w-4 h-4 text-emerald-600" />
+            <span>Dynamic Crop Urgency</span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            Prioritizes water at flowering & bulb development stages to safeguard farmer yields.
+          </p>
+        </div>
+      </div>
+
+      <div
+        className="hidden xl:flex flex-col gap-5 absolute right-12 top-1/2 -translate-y-1/2 max-w-xs z-10 pointer-events-none transition-transform duration-700 ease-out"
+        style={{ transform: `translateY(-50%) translate3d(${cardTilt.y * 1.5}px, ${cardTilt.x * 1.5}px, 0)` }}
+      >
+        <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
+          <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
+            <Scale className="w-4 h-4 text-amber-600" />
+            <span>AI Dispute Mediation</span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            Automated compromise negotiations with transparent mathematical fairness scoring.
+          </p>
+          <div className="flex items-center space-x-2 pt-1 text-[10px] font-bold text-slate-700">
+            <span className="bg-amber-100/80 text-amber-900 px-2 py-0.5 rounded-full">Peaceful Farming</span>
+          </div>
+        </div>
+
+        <div className="bg-white/85 backdrop-blur-md p-4 rounded-2xl border border-white/60 shadow-lg space-y-1.5">
+          <div className="flex items-center space-x-2 text-emerald-800 font-bold text-xs">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Panchayat Policy Protected</span>
+          </div>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            1 water request per 3 days rule enforced transparently across all village accounts.
+          </p>
+        </div>
+      </div>
+
+      {/* Main Glassmorphic 3D Card with Tilt */}
+      <div
+        onMouseMove={handleCardMouseMove}
+        onMouseLeave={handleCardMouseLeave}
+        style={{
+          transform: `perspective(1000px) rotateX(${cardTilt.x}deg) rotateY(${cardTilt.y}deg)`,
+          transition: 'transform 0.15s ease-out, box-shadow 0.2s ease-out',
+        }}
+        className="w-full max-w-md bg-white/92 backdrop-blur-xl border border-white/80 shadow-[0_25px_60px_-15px_rgba(6,78,59,0.2)] rounded-3xl p-6 sm:p-8 relative z-10 text-slate-800 hover:shadow-[0_30px_70px_-15px_rgba(6,78,59,0.28)]"
+      >
 
         {/* Header Logo */}
         <div className="text-center mb-6">
