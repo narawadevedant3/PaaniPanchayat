@@ -2,17 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { UserRole, Language } from '../types';
-import { Droplets, ShieldCheck, RefreshCw, Download, Globe, User, Settings, Scale } from 'lucide-react';
+import { AuthUser, UserRole, Language } from '../types';
+import { Droplets, ShieldCheck, RefreshCw, Download, Globe, User, Settings, Scale, LogOut } from 'lucide-react';
 
 interface NavbarProps {
   currentRole: UserRole;
   setRole: (role: UserRole) => void;
   onResetDemo: () => void;
   isLoading: boolean;
+  authUser?: AuthUser | null;
+  onLogout?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDemo, isLoading }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDemo, isLoading, authUser, onLogout }) => {
   const { language, setLanguage, t } = useLanguage();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -68,43 +70,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          
-          {/* Demo Reset Button */}
-          <button
-            onClick={onResetDemo}
-            disabled={isLoading}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-800/60 hover:bg-emerald-700/80 text-emerald-100 text-xs sm:text-sm font-medium transition border border-emerald-600/40 shadow-sm disabled:opacity-50"
-            title="Load 4-Farmer Scarcity Demo Preset"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline">{t('demoReset')}</span>
-          </button>
+        <div className="flex items-center space-x-2 sm:space-x-3">
 
-          {/* Role View Toggle Button */}
-          <div className="flex items-center bg-emerald-900/80 p-1 rounded-lg border border-emerald-700/50">
-            <button
-              onClick={() => setRole('farmer')}
-              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-xs font-semibold transition ${
-                currentRole === 'farmer'
-                  ? 'bg-cyan-500 text-emerald-950 shadow'
-                  : 'text-emerald-300 hover:text-white'
-              }`}
-            >
-              <User className="h-3.5 w-3.5" />
-              <span>{t('farmerView')}</span>
-            </button>
-            <button
-              onClick={() => setRole('admin')}
-              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-xs font-semibold transition ${
-                currentRole === 'admin'
-                  ? 'bg-amber-400 text-amber-950 shadow'
-                  : 'text-emerald-300 hover:text-white'
-              }`}
-            >
-              <Scale className="h-3.5 w-3.5" />
-              <span>{t('adminView')}</span>
-            </button>
+          {/* Active Role Badge */}
+          <div className="flex items-center px-3 py-1 bg-emerald-900/80 rounded-lg border border-emerald-700/50 text-xs font-semibold">
+            {currentRole === 'admin' ? (
+              <span className="flex items-center space-x-1 text-amber-300">
+                <Scale className="h-3.5 w-3.5 text-amber-400" />
+                <span>Panchayat Admin</span>
+              </span>
+            ) : (
+              <span className="flex items-center space-x-1 text-cyan-300">
+                <User className="h-3.5 w-3.5 text-cyan-400" />
+                <span>Farmer Portal</span>
+              </span>
+            )}
           </div>
 
           {/* Language Switcher */}
@@ -130,6 +110,25 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRole, setRole, onResetDem
             <Download className="h-3.5 w-3.5" />
             <span className="hidden lg:inline">{t('installApp')}</span>
           </button>
+
+          {/* User Profile & Logout */}
+          {authUser && (
+            <div className="flex items-center space-x-2 pl-2 border-l border-emerald-800/60">
+              <div className="hidden sm:flex flex-col text-right">
+                <span className="text-xs font-bold text-emerald-100">{authUser.name}</span>
+                <span className="text-[10px] text-emerald-400/80 capitalize">{authUser.role}</span>
+              </div>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-rose-100 border border-rose-800/40 transition"
+                  title="Sign Out"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
         </div>
 

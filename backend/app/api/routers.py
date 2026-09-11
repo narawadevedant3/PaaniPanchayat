@@ -9,6 +9,7 @@ from app.services.water_requirement import calculate_water_requirement
 from app.services.weather_service import fetch_weather_data
 from app.services.optimizer import solve_water_allocation
 from app.services.agent_engine import agent_engine
+from app.services.auth import hash_password, verify_password, create_access_token, decode_access_token
 
 # Initialize tables
 Base.metadata.create_all(bind=engine)
@@ -43,6 +44,80 @@ def log_audit(db: Session, entity_type: str, entity_id: str, action: str, detail
     })
     return log
 
+# --- AUTHENTICATION ENDPOINTS ---
+@router.post("/auth/register", response_model=schemas.AuthResponse)
+def register_user(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
+    existing = db.query(models.User).filter(models.User.email == user_in.email.lower().strip()).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_pwd = hash_password(user_in.password)
+    new_user = models.User(
+        name=user_in.name,
+        email=user_in.email.lower().strip(),
+        hashed_password=hashed_pwd,
+        role=user_in.role,
+        contact=user_in.contact,
+        language=user_in.language
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    token = create_access_token(new_user.id, new_user.email, new_user.role, new_user.name)
+    log_audit(db, "User", str(new_user.id), "REGISTER_USER", {"email": new_user.email, "role": new_user.role})
+    
+    return schemas.AuthResponse(
+        user_id=new_user.id,
+        name=new_user.name,
+        email=new_user.email,
+        role=new_user.role,
+        token=token,
+        message="User registered successfully"
+    )
+
+@router.post("/auth/login", response_model=schemas.AuthResponse)
+def login_user(login_in: schemas.UserLogin, db: Session = Depends(get_db)):
+    email_clean = login_in.email.lower().strip()
+    user = db.query(models.User).filter(models.User.email == email_clean).first()
+    
+    # Check if user exists or if password matches
+    if not user or not user.hashed_password or not verify_password(login_in.password, user.hashed_password):
+        # Fallback for demo users if unhashed/seeded
+        if user and not user.hashed_password and login_in.password == "password123":
+            pass # allow demo user
+        else:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    token = create_access_token(user.id, user.email, user.role, user.name)
+    log_audit(db, "User", str(user.id), "LOGIN_USER", {"email": user.email, "role": user.role})
+    
+    return schemas.AuthResponse(
+        user_id=user.id,
+        name=user.name,
+        email=user.email or email_clean,
+        role=user.role,
+        token=token,
+        message="Login successful"
+    )
+
+@router.get("/auth/me")
+def get_current_user(token: str, db: Session = Depends(get_db)):
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user = db.query(models.User).filter(models.User.id == payload["user_id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "user_id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "contact": user.contact,
+        "language": user.language
+    }
+
 # --- DEMO RESET & SEED DATA ENDPOINT ---
 @router.post("/demo/reset")
 def reset_demo_data(db: Session = Depends(get_db)):
@@ -71,12 +146,23 @@ def reset_demo_data(db: Session = Depends(get_db)):
     db.add(source)
     db.commit()
 
+    # Create Demo Admin User
+    admin_user = models.User(
+        name="Panchayat Admin",
+        email="admin@paanipanchayat.org",
+        hashed_password=hash_password("admin123"),
+        role="admin",
+        language="en"
+    )
+    db.add(admin_user)
+    db.commit()
+
     # Create Demo Farms (PRD Section 29)
     demo_farms_input = [
-        {"name": "Ramesh (Farm A)", "crop": "Wheat", "area": 2.0, "soil": "Clay", "stage": "Flowering", "eff": 0.75, "prev_irr": 10000.0},
-        {"name": "Suresh (Farm B)", "crop": "Tomato", "area": 1.5, "soil": "Loam", "stage": "Fruit Development", "eff": 0.70, "prev_irr": 8000.0},
-        {"name": "Vijay (Farm C)", "crop": "Sugarcane", "area": 3.0, "soil": "Black", "stage": "Vegetative", "eff": 0.65, "prev_irr": 15000.0},
-        {"name": "Anish (Farm D)", "crop": "Onion", "area": 1.0, "soil": "Sandy", "stage": "Bulb Development", "eff": 0.80, "prev_irr": 5000.0}
+        {"name": "Ramesh (Farm A)", "email": "ramesh@paanipanchayat.org", "crop": "Wheat", "area": 2.0, "soil": "Clay", "stage": "Flowering", "eff": 0.75, "prev_irr": 10000.0},
+        {"name": "Suresh (Farm B)", "email": "suresh@paanipanchayat.org", "crop": "Tomato", "area": 1.5, "soil": "Loam", "stage": "Fruit Development", "eff": 0.70, "prev_irr": 8000.0},
+        {"name": "Vijay (Farm C)", "email": "vijay@paanipanchayat.org", "crop": "Sugarcane", "area": 3.0, "soil": "Black", "stage": "Vegetative", "eff": 0.65, "prev_irr": 15000.0},
+        {"name": "Anish (Farm D)", "email": "anish@paanipanchayat.org", "crop": "Onion", "area": 1.0, "soil": "Sandy", "stage": "Bulb Development", "eff": 0.80, "prev_irr": 5000.0}
     ]
 
     created_farms = []
@@ -84,7 +170,13 @@ def reset_demo_data(db: Session = Depends(get_db)):
     total_demand = 0.0
 
     for idx, f in enumerate(demo_farms_input, start=1):
-        user = models.User(name=f["name"], role="farmer", language="en")
+        user = models.User(
+            name=f["name"],
+            email=f["email"],
+            hashed_password=hash_password("password123"),
+            role="farmer",
+            language="en"
+        )
         db.add(user)
         db.commit()
 
