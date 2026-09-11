@@ -38,7 +38,7 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   const [cooldown, setCooldown] = useState<{ can_request: boolean; message?: string; hours_remaining?: number; days_remaining?: number } | null>(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL 
-    || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    || (typeof window !== 'undefined' && window.location.port === '3000'
         ? `http://${window.location.hostname}:8000/api` 
         : '/api');
 
