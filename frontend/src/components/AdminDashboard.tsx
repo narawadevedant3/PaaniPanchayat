@@ -20,7 +20,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
   if (!allocation) {
     return (
       <div className="p-8 text-center text-emerald-300">
-        No allocation data available. Please reset demo scenario.
+        No allocation data available.
       </div>
     );
   }
@@ -217,17 +217,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ allocation, audi
             <p className="text-xs text-emerald-400 italic">No audit records logged yet.</p>
           ) : (
             auditLogs.map((log) => (
-              <div key={log.id} className="p-3 bg-emerald-900/30 rounded-xl border border-emerald-800/40 text-xs flex flex-col sm:flex-row justify-between gap-2">
-                <div className="space-y-0.5">
+              <div key={log.id} className="p-3 bg-emerald-900/30 rounded-xl border border-emerald-800/40 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 font-bold text-[10px] uppercase">
+                    <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 font-bold text-[10px] uppercase border border-cyan-800/50">
                       {log.entity_type} #{log.entity_id}
                     </span>
-                    <span className="font-bold text-white">{log.action}</span>
+                    <span className="font-bold text-white">{log.action.replace(/_/g, ' ')}</span>
                   </div>
-                  <pre className="text-[11px] text-emerald-200 font-mono mt-1 whitespace-pre-wrap">
-                    {JSON.stringify(log.details, null, 2)}
-                  </pre>
+                  
+                  {/* Clean Human-Readable Details Format */}
+                  {log.details && typeof log.details === 'object' ? (
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-emerald-200 mt-1">
+                      {Object.entries(log.details).map(([k, v]) => {
+                        const formattedKey = k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        const formattedVal = typeof v === 'boolean' ? (v ? 'Yes' : 'No') : typeof v === 'number' ? v.toLocaleString() : String(v);
+                        return (
+                          <span key={k} className="inline-flex items-center space-x-1 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
+                            <span className="text-emerald-400 font-medium">{formattedKey}:</span>
+                            <span className="text-white font-semibold">{formattedVal}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-emerald-200">{String(log.details)}</p>
+                  )}
                 </div>
                 <span className="text-[10px] text-emerald-400 font-mono shrink-0">
                   {new Date(log.timestamp).toLocaleTimeString()}

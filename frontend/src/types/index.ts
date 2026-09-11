@@ -2,6 +2,28 @@ export type Language = 'en' | 'hi' | 'mr';
 
 export type UserRole = 'farmer' | 'admin';
 
+export interface AuthUser {
+  user_id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+  token: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  contact?: string;
+  language?: Language;
+}
+
 export interface Farm {
   id: number;
   farmer_name: string;

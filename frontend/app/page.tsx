@@ -7,7 +7,8 @@ import { AdminDashboard } from '../src/components/AdminDashboard';
 import { MediationChat } from '../src/components/MediationChat';
 import { WhyExplanationModal } from '../src/components/WhyExplanationModal';
 import { FarmRegistrationModal } from '../src/components/FarmRegistrationModal';
-import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse } from '../src/types';
+import { AuthView } from '../src/components/AuthView';
+import { UserRole, AllocationResult, Farm, AllocationItem, AuditLogItem, MediationProposalResponse, AuthUser } from '../src/types';
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -100,6 +101,7 @@ const INITIAL_DEMO_ALLOCATION: AllocationResult = {
 
 export default function Home() {
   const [role, setRole] = useState<UserRole>('farmer');
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [allocation, setAllocation] = useState<AllocationResult | null>(INITIAL_DEMO_ALLOCATION);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [selectedFarmId, setSelectedFarmId] = useState<number>(1);
@@ -111,6 +113,47 @@ export default function Home() {
   const [whyItem, setWhyItem] = useState<AllocationItem | null>(null);
   const [objectionItem, setObjectionItem] = useState<AllocationItem | null>(null);
   const [showAddFarmModal, setShowAddFarmModal] = useState<boolean>(false);
+
+  // Check saved authentication session
+  useEffect(() => {
+    const savedUser = localStorage.getItem('paani_user');
+    if (savedUser) {
+      try {
+        const parsed: AuthUser = JSON.parse(savedUser);
+        setAuthUser(parsed);
+        setRole(parsed.role);
+      } catch (e) {
+        localStorage.removeItem('paani_user');
+      }
+    }
+  }, []);
+
+  const handleLoginSuccess = (user: AuthUser) => {
+    setAuthUser(user);
+    setRole(user.role);
+    localStorage.setItem('paani_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setAuthUser(null);
+    localStorage.removeItem('paani_user');
+  };
+
+  // Automatically bind selectedFarmId to logged in user's farm
+  useEffect(() => {
+    if (authUser && allocation && allocation.allocations.length > 0) {
+      const userFirstName = authUser.name.split(' ')[0].toLowerCase();
+      const matched = allocation.allocations.find(a => 
+        a.farmer_name.toLowerCase().includes(userFirstName) ||
+        a.farm_id === authUser.user_id
+      );
+      if (matched) {
+        setSelectedFarmId(matched.farm_id);
+      } else {
+        setSelectedFarmId(allocation.allocations[0].farm_id);
+      }
+    }
+  }, [authUser, allocation]);
 
   // Fetch initial backend state if online
   const refreshBackendData = async () => {
@@ -260,6 +303,10 @@ export default function Home() {
     }
   };
 
+  if (!authUser) {
+    return <AuthView apiBase={API_BASE} onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-emerald-950 font-sans">
       
@@ -269,6 +316,8 @@ export default function Home() {
         setRole={setRole}
         onResetDemo={handleResetDemo}
         isLoading={isLoading}
+        authUser={authUser}
+        onLogout={handleLogout}
       />
 
       {/* Main View Container */}

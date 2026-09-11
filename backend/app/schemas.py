@@ -5,12 +5,33 @@ import datetime
 # User Schemas
 class UserBase(BaseModel):
     name: str
+    email: Optional[str] = None
     role: str = "farmer"
     contact: Optional[str] = None
     language: str = "en"
 
 class UserCreate(UserBase):
     pass
+
+class UserRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str = "farmer" # farmer or admin
+    contact: Optional[str] = None
+    language: str = "en"
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class AuthResponse(BaseModel):
+    user_id: int
+    name: str
+    email: str
+    role: str
+    token: str
+    message: str
 
 class UserResponse(UserBase):
     id: int

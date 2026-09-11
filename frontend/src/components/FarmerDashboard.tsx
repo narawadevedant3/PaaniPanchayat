@@ -54,27 +54,20 @@ export const FarmerDashboard: React.FC<FarmerDashboardProps> = ({
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       
-      {/* Farmer Selection Bar */}
+      {/* Logged-in Farmer Header */}
       <div className="bg-emerald-900/40 backdrop-blur-md p-4 rounded-2xl border border-emerald-700/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
-        <div className="flex items-center space-x-3 w-full sm:w-auto">
+        <div className="flex items-center space-x-3">
           <div className="h-10 w-10 rounded-full bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center shrink-0">
             <Sprout className="h-5 w-5 text-cyan-400" />
           </div>
           <div>
-            <label className="text-xs text-emerald-300 font-semibold block uppercase tracking-wider">
-              Select Farmer Profile:
-            </label>
-            <select
-              value={currentAllocationItem.farm_id}
-              onChange={(e) => setSelectedFarmId(Number(e.target.value))}
-              className="bg-emerald-950 text-white font-bold text-base sm:text-lg focus:outline-none cursor-pointer pr-4"
-            >
-              {allocation.allocations.map(item => (
-                <option key={item.farm_id} value={item.farm_id} className="bg-emerald-950 text-white">
-                  👨‍🌾 {item.farmer_name} — {item.crop_name} ({item.area_acres} acres)
-                </option>
-              ))}
-            </select>
+            <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block">Logged In Farmer</span>
+            <h2 className="text-lg font-extrabold text-white flex items-center space-x-2">
+              <span>👨‍🌾 {currentAllocationItem.farmer_name}</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-800/80 text-cyan-300 font-medium border border-emerald-600/40">
+                {currentAllocationItem.crop_name} ({currentAllocationItem.area_acres} Acres)
+              </span>
+            </h2>
           </div>
         </div>
 
