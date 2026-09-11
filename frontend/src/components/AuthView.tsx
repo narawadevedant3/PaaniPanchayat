@@ -38,7 +38,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
       const res = await fetch(`${apiBase}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+        body: JSON.stringify({ email: loginEmail.trim(), password: loginPassword.trim() })
       });
 
       const data = await res.json();
@@ -72,11 +72,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: regName,
-          email: regEmail,
-          password: regPassword,
+          name: regName.trim(),
+          email: regEmail.trim(),
+          password: regPassword.trim(),
           role: regRole,
-          contact: regContact || undefined,
+          contact: regContact.trim() || undefined,
           language: 'en'
         })
       });
@@ -86,11 +86,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         throw new Error(data.detail || 'Registration failed');
       }
 
-      // On successful registration, switch to Sign In tab & populate email
-      setLoginEmail(regEmail);
-      setLoginPassword('');
-      setActiveTab('login');
-      setSuccessMsg('Account registered successfully! Please sign in with your password.');
+      // Automatically sign in newly registered user immediately!
+      onLoginSuccess({
+        user_id: data.user_id,
+        name: data.name,
+        email: data.email,
+        role: data.role as UserRole,
+        token: data.token
+      });
     } catch (err: any) {
       setErrorMsg(err.message || 'Unable to register account.');
     } finally {
