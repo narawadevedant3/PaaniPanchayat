@@ -3,7 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "paanipanchayat.db")
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/paanipanchayat.db"
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "paanipanchayat.db")
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 engine = create_engine(
