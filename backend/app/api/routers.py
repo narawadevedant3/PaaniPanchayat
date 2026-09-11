@@ -116,14 +116,17 @@ def log_audit(db: Session, entity_type: str, entity_id: str, action: str, detail
 # --- AUTHENTICATION ENDPOINTS ---
 @router.post("/auth/register", response_model=schemas.AuthResponse)
 def register_user(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(models.User.email == user_in.email.lower().strip()).first()
+    email_clean = user_in.email.lower().strip()
+    pwd_clean = user_in.password.strip()
+
+    existing = db.query(models.User).filter(models.User.email == email_clean).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    hashed_pwd = hash_password(user_in.password)
+    hashed_pwd = hash_password(pwd_clean)
     new_user = models.User(
-        name=user_in.name,
-        email=user_in.email.lower().strip(),
+        name=user_in.name.strip(),
+        email=email_clean,
         hashed_password=hashed_pwd,
         role=user_in.role,
         contact=user_in.contact,
@@ -148,15 +151,20 @@ def register_user(user_in: schemas.UserRegister, db: Session = Depends(get_db)):
 @router.post("/auth/login", response_model=schemas.AuthResponse)
 def login_user(login_in: schemas.UserLogin, db: Session = Depends(get_db)):
     email_clean = login_in.email.lower().strip()
+    pwd_clean = login_in.password.strip()
     user = db.query(models.User).filter(models.User.email == email_clean).first()
     
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email address or password")
+    
     # Check if user exists or if password matches
-    if not user or not user.hashed_password or not verify_password(login_in.password, user.hashed_password):
-        # Fallback for demo users if unhashed/seeded
-        if user and not user.hashed_password and login_in.password == "password123":
-            pass # allow demo user
-        else:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+    if user.hashed_password:
+        if not verify_password(pwd_clean, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Invalid email address or password")
+    else:
+        # Fallback for unhashed demo users
+        if pwd_clean != "password123" and pwd_clean != "admin123":
+            raise HTTPException(status_code=401, detail="Invalid email address or password")
     
     token = create_access_token(user.id, user.email, user.role, user.name)
     log_audit(db, "User", str(user.id), "LOGIN_USER", {"email": user.email, "role": user.role})
@@ -239,7 +247,7 @@ def init_server_state(db: Session):
 @router.post("/demo/reset")
 def reset_demo_data(db: Session = Depends(get_db)):
     """
-    Resets the database with the exact PRD Section 29 4-Farm Demo Scenario.
+    Resets the demo scenario without deleting custom registered user accounts.
     """
     CURRENT_STATE["last_allocation"] = None
     db.query(models.AuditLog).delete()
@@ -250,9 +258,17 @@ def reset_demo_data(db: Session = Depends(get_db)):
     db.query(models.Allocation).delete()
     db.query(models.WaterRequirement).delete()
     db.query(models.Crop).delete()
-    db.query(models.Farm).delete()
+
+    # Delete demo users and their farms, preserving custom registered accounts
+    demo_emails = ["admin@paanipanchayat.org", "ramesh@paanipanchayat.org", "suresh@paanipanchayat.org", "vijay@paanipanchayat.org", "anish@paanipanchayat.org"]
+    demo_users = db.query(models.User).filter(models.User.email.in_(demo_emails)).all()
+    demo_user_ids = [u.id for u in demo_users]
+
+    if demo_user_ids:
+        db.query(models.Farm).filter(models.Farm.user_id.in_(demo_user_ids)).delete(synchronize_session=False)
+        db.query(models.User).filter(models.User.id.in_(demo_user_ids)).delete(synchronize_session=False)
+
     db.query(models.WaterSource).delete()
-    db.query(models.User).delete()
     db.commit()
 
     # Create Water Source
