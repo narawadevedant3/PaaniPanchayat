@@ -171,8 +171,17 @@ export const translations = {
     waterHelpline: "Water Helpline",
     helplineDesc: "Dispute Officers available 24/7 during canal rotation cycles.",
     irrigationDesk: "Irrigation Officer Desk",
-    panchayatOffice: "Gram Panchayat Office, Canal Zone #1",
-    platformOverview: "AI-Powered Water Sharing & Dispute Mediation Platform for Indian Farmers. Optimizing canal allocations with Google OR-Tools to eliminate water disputes."
+    platformOverview: "AI-Powered Water Sharing & Dispute Mediation Platform for Indian Farmers. Optimizing canal allocations with Google OR-Tools to eliminate water disputes.",
+
+    // Auth & Account
+    registrationSuccessMsg: "Registration successful! Your account has been saved in the database. Please sign in with your email and password.",
+    signIn: "Sign In",
+    register: "Register",
+    emailAddress: "Email Address",
+    password: "Password",
+    fullName: "Full Name",
+    mobileNumber: "Mobile Number (WhatsApp)",
+    createAccount: "Create Account"
   },
   hi: {
     // Water cycle & System
@@ -296,8 +305,17 @@ export const translations = {
     waterHelpline: "जल हेल्पलाइन",
     helplineDesc: "नहर चक्र के दौरान अधिकारी 24/7 सहायता के लिए उपलब्ध हैं।",
     irrigationDesk: "सिंचाई अधिकारी डेस्क",
-    panchayatOffice: "ग्राम पंचायत कार्यालय, नहर ज़ोन #1",
-    platformOverview: "भारतीय किसानों के लिए एआई-संचालित जल साझाकरण और विवाद समाधान मंच। Google OR-Tools द्वारा नहर जल का निष्पक्ष वितरण।"
+    platformOverview: "भारतीय किसानों के लिए एआई-संचालित जल साझाकरण और विवाद समाधान मंच। Google OR-Tools द्वारा नहर जल का निष्पक्ष वितरण।",
+
+    // Auth & Account
+    registrationSuccessMsg: "पंजीकरण सफल रहा! आपका विवरण डेटाबेस में सुरक्षित हो गया है। कृपया अपने ईमेल और पासवर्ड से साइन इन करें।",
+    signIn: "साइन इन",
+    register: "रजिस्टर करें",
+    emailAddress: "ईमेल पता",
+    password: "पासवर्ड",
+    fullName: "पूरा नाम",
+    mobileNumber: "मोबाइल नंबर (व्हाट्सएप)",
+    createAccount: "खाता बनाएं"
   },
   mr: {
     // Water cycle & System
@@ -421,7 +439,16 @@ export const translations = {
     waterHelpline: "पाणी हेल्पलाइन",
     helplineDesc: "पाटाच्या पाळीदरम्यान अधिकारी २४/७ मदतीसाठी उपलब्ध आहेत.",
     irrigationDesk: "सिंचन अधिकारी कार्यालय",
-    panchayatOffice: "ग्रामपंचायत कार्यालय, कालवा विभाग क्र. १",
-    platformOverview: "भारतीय शेतकऱ्यांसाठी एआय-आधारित पाणी वाटप व विवाद निवारण व्यासपीठ. Google OR-Tools द्वारे कालव्याच्या पाण्याचे न्याय्य वाटप."
+    platformOverview: "भारतीय शेतकऱ्यांसाठी एआई-आधारित पाणी वाटप व विवाद निवारण व्यासपीठ. Google OR-Tools द्वारे कालव्याच्या पाण्याचे न्याय्य वाटप.",
+
+    // Auth & Account
+    registrationSuccessMsg: "नोंदणी यशस्वी झाली! आपले खाते डेटाबेसमध्ये सुरक्षित सेव्ह झाले आहे. कृपया आपल्या ईमेल आणि पासवर्डने साइन इन करा.",
+    signIn: "साइन इन",
+    register: "नोंदणी करा",
+    emailAddress: "ईमेल पत्ता",
+    password: "पासवर्ड",
+    fullName: "पूर्ण नाव",
+    mobileNumber: "मोबाईल नंबर (व्हॉट्सॲप)",
+    createAccount: "खाते तयार करा"
   }
 };

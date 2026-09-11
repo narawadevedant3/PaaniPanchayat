@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { Droplet, Lock, Mail, User, ShieldCheck, Phone, ArrowRight, Sparkles, CheckCircle2, Eye, EyeOff, Waves, Sprout, Scale } from 'lucide-react';
 import { AuthUser, UserRole } from '../types';
 import { ThreeDWaterBackground } from './ThreeDWaterBackground';
@@ -9,6 +10,7 @@ interface AuthViewProps {
 }
 
 export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) => {
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
 
   // Interactive 3D card tilt state
@@ -84,16 +86,17 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
     setIsLoading(true);
 
     try {
+      const emailToRegister = regEmail.trim().toLowerCase();
       const res = await fetch(`${apiBase}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: regName.trim(),
-          email: regEmail.trim(),
+          email: emailToRegister,
           password: regPassword.trim(),
           role: regRole,
           contact: regContact.trim() || undefined,
-          language: 'en'
+          language: language || 'en'
         })
       });
 
@@ -102,14 +105,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
         throw new Error(data.detail || 'Registration failed');
       }
 
-      // Automatically sign in newly registered user immediately!
-      onLoginSuccess({
-        user_id: data.user_id,
-        name: data.name,
-        email: data.email,
-        role: data.role as UserRole,
-        token: data.token
-      });
+      // DO NOT navigate immediately to farmer page!
+      // Save is committed to database by backend. Switch to Sign In tab, pre-fill email, and display success message.
+      setLoginEmail(emailToRegister);
+      setLoginPassword('');
+      setRegName('');
+      setRegEmail('');
+      setRegPassword('');
+      setRegContact('');
+      setActiveTab('login');
+      setSuccessMsg(t('registrationSuccessMsg'));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unable to register account.';
       setErrorMsg(msg);
@@ -251,7 +256,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
                 : 'text-slate-600 hover:text-slate-900'
               }`}
           >
-            Sign In
+            {t('signIn')}
           </button>
           <button
             type="button"
@@ -261,7 +266,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLoginSuccess, apiBase }) =
                 : 'text-slate-600 hover:text-slate-900'
               }`}
           >
-            Register
+            {t('register')}
           </button>
         </div>
 
