@@ -3,13 +3,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Support external persistent PostgreSQL/MySQL database via DATABASE_URL environment variable
+# Support Neon PostgreSQL persistent cloud database via DATABASE_URL environment variable
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=300
+    )
 else:
     if os.environ.get("VERCEL"):
         DB_PATH = "/tmp/paanipanchayat.db"
